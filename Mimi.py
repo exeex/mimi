@@ -273,36 +273,3 @@ class MidiTrack(mido.MidiTrack):
         return
 
 
-if __name__ == "__main__":
-
-    # import matplotlib.pyplot as plt
-
-    mid = mido.MidiFile()
-    track = MidiTrack()
-    mid.tracks.append(track)
-
-    # Test bar
-
-    bar2 = Bar([Note(2), Note(4, 1/8), Note(3), Note(4), Note(4, 1/8)], key="C", mode=Mode.major, octave=4)
-
-    bar = Bar([Chord(Note(0), Note(2), Note(4)), Note(0, 1/8), Note(2, 1/8),Chord(Note(0), Note(2), Note(4)), Note(0, 1/8), Note(2, 1/8)], key="C", mode=Mode.major, octave=4)
-
-    # track.append_bar(bar)
-    #
-    # mid.save("gg.mid")
-
-    # Test tab
-
-    tab = Tab(bar, bar, bar)
-    tab.append(bar2)
-    a = tab.to_array()
-
-    track.append_bar(tab)
-    mid.save("gg.mid")
-
-
-    # TODO: write test code
-
-
-
-# class MidiFile(mido.MidiFile):
