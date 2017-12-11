@@ -1,7 +1,6 @@
 import mido
 from mido import Message
-import scripts.mimi.pitch_mode_mapping as mode
-import re
+import Mode
 import numpy as np
 
 import json
@@ -47,7 +46,7 @@ class Chord(Note):
 
 
 class Bar:
-    def __init__(self, notes=None, key="C", mode=mode.major, octave=4, tempo=75, time_sign=(4, 4)):
+    def __init__(self, notes=None, key="C", mode=Mode.major, octave=4, tempo=75, time_sign=(4, 4)):
 
         """
         init a Bar object (小節物件)
@@ -284,9 +283,9 @@ if __name__ == "__main__":
 
     # Test bar
 
-    bar2 = Bar([Note(2), Note(4, 1/8), Note(3), Note(4), Note(4, 1/8)], key="C", mode=mode.major, octave=4)
+    bar2 = Bar([Note(2), Note(4, 1/8), Note(3), Note(4), Note(4, 1/8)], key="C", mode=Mode.major, octave=4)
 
-    bar = Bar([Chord(Note(0), Note(2), Note(4)), Note(0, 1/8), Note(2, 1/8),Chord(Note(0), Note(2), Note(4)), Note(0, 1/8), Note(2, 1/8)], key="C", mode=mode.major, octave=4)
+    bar = Bar([Chord(Note(0), Note(2), Note(4)), Note(0, 1/8), Note(2, 1/8),Chord(Note(0), Note(2), Note(4)), Note(0, 1/8), Note(2, 1/8)], key="C", mode=Mode.major, octave=4)
 
     # track.append_bar(bar)
     #

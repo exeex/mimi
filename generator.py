@@ -1,9 +1,11 @@
-from scripts.mimi.mimi import MidiTrack, Note, Bar, Chord, Tab
-from scripts.mimi.pitch_mode_mapping import major, minor, key_dict
-from mido import MidiFile
 import random
-import scripts.mimi.output as output
 import numpy as np
+from mido import MidiFile
+
+
+from Mimi import MidiTrack, Note, Bar, Chord, Tab
+from Mode import major, minor, key_dict
+import output
 
 
 def get_random_note(pitch=None, time=None):
