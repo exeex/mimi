@@ -2,7 +2,6 @@ import mido
 from mido import Message
 import Mode
 import numpy as np
-
 import json
 
 
@@ -225,7 +224,6 @@ class Tab(Bar):
         return self.bars.pop()
 
 
-
 class MidiTrack(mido.MidiTrack):
 
     def append_bar(self, bar):
@@ -235,7 +233,6 @@ class MidiTrack(mido.MidiTrack):
         elif type(bar) is Tab:
             for tab_bar in bar.bars:
                 self._append_bar(tab_bar)
-
 
     def _append_bar(self, bar: Bar):
         for note in bar.notes:

@@ -4,16 +4,15 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.colors import colorConverter
 
-
 # inherit the origin mido class
 class MidiFile(mido.MidiFile):
 
-    def __init__(self, filename):
+    def __init__(self, filename=None):
 
         mido.MidiFile.__init__(self, filename)
         self.sr = 10
         self.meta = {}
-        self.events = self.get_events()
+
 
     def get_events(self):
         mid = self
@@ -171,6 +170,7 @@ class MidiFile(mido.MidiFile):
 
     def draw_roll(self):
 
+        self.events = self.get_events()
 
         roll = self.get_roll()
 
