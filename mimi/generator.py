@@ -2,9 +2,9 @@ import random
 import numpy as np
 from mido import MidiFile
 
-from Mimi import MidiTrack, Note, Bar, Chord, Tab
-from Mode import major, minor, key_dict
-import output
+from .Mimi import MidiTrack, Note, Bar, Chord, Tab
+from .Mode import major, minor, key_dict
+import mimi.output
 
 
 def get_random_note(pitch=None, time=None):

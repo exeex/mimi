@@ -1,6 +1,6 @@
 import mido
 from mido import Message
-import Mode
+import mimi.Mode as Mode
 import numpy as np
 import json
 
