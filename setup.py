@@ -40,7 +40,7 @@ setup(
     author_email=about['__author_email__'],
     url=about['__url__'],
     license=about['__license__'],
-    package_data={'soundfont': ['soundfont/*']},
+    # package_data={'soundfont': ['soundfont/*']},
     package_dir={'mimi': 'mimi'},
     packages=['mimi'],
     include_package_data=True,
