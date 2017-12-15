@@ -1,9 +1,8 @@
 import unittest
-
+import os
 import mido
-from Mimi import MidiTrack, Note, Chord, Bar, Tab
-import Mode
-
+from mimi.Mimi import Note, Chord, Bar, Tab
+from mimi import MidiTrack, MidiFile, Mode
 
 
 # initialize
@@ -23,7 +22,7 @@ bar2 = Bar(
 class MimiTest(unittest.TestCase):
 
     def test_bar(self):
-        mid = mido.MidiFile()
+        mid = MidiFile()
         track = MidiTrack()
         mid.tracks.append(track)
 
@@ -32,7 +31,7 @@ class MimiTest(unittest.TestCase):
         track.append_bar(bar2)
 
         # save file
-        mid.save("test_bar.mid")
+        # mid.save("test_bar.mid")
 
 
     def test_tab(self):
@@ -45,7 +44,7 @@ class MimiTest(unittest.TestCase):
         tab = Tab(bar, bar2, bar)
         tab.append(bar2)
         track.append_bar(tab)
-        mid.save("test_tab.mid")
+        # mid.save("test_tab.mid")
 
 
     def test_tab_to_array(self):
@@ -54,6 +53,11 @@ class MimiTest(unittest.TestCase):
         array = tab.to_array()
 
         return array
+
+    def tearDown(self):
+
+        return
+
 
 if __name__ == '__main__':
     unittest.main()
