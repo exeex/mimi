@@ -69,7 +69,8 @@ class Bar:
         self.octave = octave
         self.tempo = tempo
         self.time_sign = time_sign
-        self.time_constant = 72000                      # 時間常數，換算midi每個tick的時間用的
+        self.tick_per_min = 57600                       # 時間常數，換算midi每個tick的時間用的
+                                                        # according to mido setting: bpm = 120, ticks per beat= 480
 
         self.mode = mode
 
@@ -109,9 +110,8 @@ class Bar:
         :return:
 
         """
-
-        time = int(self.time_constant / self.tempo * note.time)
-        # TODO: adjust time
+        unit_note_time = 1 / self.time_sign[1]
+        time = int(self.tick_per_min / self.tempo * note.time/unit_note_time)
         return time
 
     def append(self, note: Note):
@@ -128,7 +128,7 @@ class Bar:
              "octave":self.octave,
              "tempo":self.tempo,
              "time_signature":self.time_sign,
-             "time_constant":self.time_constant,
+             "time_constant":self.tick_per_min,
              "mode": self.mode,
              "notes": "to_be_replace"
              }
