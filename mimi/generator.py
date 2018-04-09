@@ -1,9 +1,7 @@
 import random
 import numpy as np
-from mido import MidiFile
-from mido import Message
-
-from mimi.Mimi import MidiTrack, Note, Bar, Chord, Tab
+from mimi import MidiTrack, MidiFile
+from mimi.Mimi import Note, Bar, Chord, Tab
 from mimi.Mode import major, minor, key_dict
 from mimi.output import midi2wav,json,play
 from mimi.instrument import Piano
