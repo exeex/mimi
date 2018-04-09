@@ -259,6 +259,9 @@ class MidiFile(mido.MidiFile):
         os.system("timidity -c %s %s -Ow -o - | ffmpeg -i - -acodec libmp3lame -ab 256k -map_channel 0.0.0 %s" %
                   (cfg_file, tmp_file, filename))
 
+
+        #TODO: remove tmp file
+
     def play(self,filename="tmp"):
 
         tmp_file = "%s_tmp.mid" % filename
@@ -271,7 +274,7 @@ class MidiFile(mido.MidiFile):
         # use -map_channel 0.0.0 to map left channel to mono tone mp3 file
         os.system("timidity -c %s %s -Ow -o - | ffmpeg -i - -map_channel 0.0.0 -f wav - | ffplay -i -" % (cfg_file, tmp_file))
 
-
+        #TODO: remove tmp file
 
 
 
