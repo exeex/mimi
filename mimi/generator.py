@@ -1,10 +1,12 @@
 import random
 import numpy as np
 from mido import MidiFile
+from mido import Message
 
-from .Mimi import MidiTrack, Note, Bar, Chord, Tab
-from .Mode import major, minor, key_dict
-from .output import midi2wav,json,play
+from mimi.Mimi import MidiTrack, Note, Bar, Chord, Tab
+from mimi.Mode import major, minor, key_dict
+from mimi.output import midi2wav,json,play
+from mimi.instrument import Piano
 
 
 def get_random_note(pitch=None, time=None):
@@ -105,10 +107,10 @@ def get_random_tab(key=None, mode=None, octave=None, tempo=None):
 if __name__ == "__main__":
     for x in range(1):
         tab = get_random_tab(tempo=70)
-        filename = "gggg"
+        filename = "ElectricPiano1"
 
         mid = MidiFile()
-        track = MidiTrack()
+        track = MidiTrack(instrument=Piano.ElectricPiano1)
         mid.tracks.append(track)
         track.append_bar(tab)
 
@@ -122,4 +124,4 @@ if __name__ == "__main__":
         json = tab.to_json()
         json("./json/%s.mid" % filename, json)
 
-        play("./mid/%s.mid" % filename)
+        play("./%s.mid" % filename)

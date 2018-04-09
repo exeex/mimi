@@ -1,4 +1,5 @@
 from mimi import MidiFile, MidiTrack, output, generator
+from mimi.instrument import *
 import numpy as np
 import os
 from os.path import join
@@ -17,19 +18,19 @@ class GeneratorTest(unittest.TestCase):
         self.npy_path = join(self.output_path, "npy")
         self.wav_path = join(self.output_path, "wav")
 
-        if os.path.exists(self.output_path) is not True:
+        if not os.path.exists(self.output_path) :
             os.mkdir(self.output_path)
 
-        if os.path.exists(self.mid_path) is not True:
+        if not os.path.exists(self.mid_path):
             os.mkdir(self.mid_path)
 
-        if os.path.exists(self.json_path) is not True:
+        if not os.path.exists(self.json_path):
             os.mkdir(self.json_path)
 
-        if os.path.exists(self.npy_path) is not True:
+        if not os.path.exists(self.npy_path):
             os.mkdir(self.npy_path)
 
-        if os.path.exists(self.wav_path) is not True:
+        if not os.path.exists(self.wav_path):
             os.mkdir(self.wav_path)
 
     def test_g(self):
@@ -37,7 +38,7 @@ class GeneratorTest(unittest.TestCase):
             # create midi object
 
             mid = MidiFile()
-            track = MidiTrack()
+            track = MidiTrack(instrument=Guitar.AcousticGuitar_nylon)
             mid.tracks.append(track)
 
             # get random tab and append to midi track

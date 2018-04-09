@@ -3,7 +3,7 @@ from mido import Message
 import mimi.Mode as Mode
 import numpy as np
 import json
-
+from mimi.instrument import Piano
 
 class Note:
 
@@ -226,15 +226,21 @@ class Tab(Bar):
 
 class MidiTrack(mido.MidiTrack):
 
+    def __init__(self,instrument= Piano.AcousticGrandPiano):
+        super(MidiTrack,self).__init__()
+        self.instrument = instrument
+        self.append(Message('program_change', program=instrument, time=0))
+
+
     def append_bar(self, bar):
         if type(bar) is Bar:
-            self._append_bar(bar)
+            self.__append_bar(bar)
 
         elif type(bar) is Tab:
             for tab_bar in bar.bars:
-                self._append_bar(tab_bar)
+                self.__append_bar(tab_bar)
 
-    def _append_bar(self, bar: Bar):
+    def __append_bar(self, bar: Bar):
         for note in bar.notes:
 
             if type(note) is Note:
@@ -265,7 +271,7 @@ class MidiTrack(mido.MidiTrack):
             # TODO: Volume control
             # TODO: time shift
             # TODO: independent end time for notes in chord
-            # TODO: Program change
+            # TODO: Program change ---> done, ready to be tested
 
         return
 
