@@ -5,7 +5,6 @@ import matplotlib as mpl
 from mimi.instrument import *
 from matplotlib.colors import colorConverter
 
-
 # inherit the origin mido class
 class MidiFile(mido.MidiFile):
     def __init__(self, filename=None):
@@ -180,6 +179,7 @@ class MidiFile(mido.MidiFile):
                 array.append(img.get_array())
             except IndexError:
                 pass
+
         return array
 
     def draw_roll(self,color_bar=False):
@@ -263,7 +263,19 @@ class MidiFile(mido.MidiFile):
                 max_ticks = ticks
         return max_ticks
 
+    def save_npz(self, filename=None):
+        array = self.get_roll()
+        instrument = np.array(self.get_instrument())
+        np.savez(filename, data=array, instrument=instrument)
 
+    def save_png(self, filename=""):
+        import scipy.misc
+        array = self.get_roll()
+
+        track_nb = len(self.tracks)
+
+        for idx in range(track_nb):
+            scipy.misc.toimage(array[idx, :, :], cmin=0.0).save('%s%d.png'%(filename,idx))
 
 
 if __name__ == "__main__":
@@ -276,4 +288,5 @@ if __name__ == "__main__":
     roll = mid.get_roll()
 
     # draw piano roll by pyplot
-    mid.draw_roll()
+    # mid.draw_roll()
+    mid.save_npz("gg")
