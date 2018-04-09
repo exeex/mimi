@@ -19,8 +19,7 @@ def set_soundfont(dir=None):
 
 def play(filename):
     # play by timidity
-
-    os.system("timidity -c %s %s  -Od --reverb=d --noise-shaping=4 -EwpvseToz -f" % (cfg_file,filename))
+    os.system("timidity -c %s %s  --reverb=d --noise-shaping=4 -EwpvseToz -f" % (cfg_file,filename))
 
     # TODO: not work on ubuntu linux
 

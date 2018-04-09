@@ -4,7 +4,7 @@ from mido import MidiFile
 
 from .Mimi import MidiTrack, Note, Bar, Chord, Tab
 from .Mode import major, minor, key_dict
-import mimi.output
+from .output import midi2wav,json,play
 
 
 def get_random_note(pitch=None, time=None):
@@ -117,9 +117,9 @@ if __name__ == "__main__":
         array = tab.to_array()
         np.save("./npy/%s.npy" % filename, array)
 
-        output.midi2wav("./mid/%s.mid" % filename, "./wav/%s.wav" % filename)
+        midi2wav("./mid/%s.mid" % filename, "./wav/%s.wav" % filename)
 
         json = tab.to_json()
-        output.json("./json/%s.mid" % filename, json)
+        json("./json/%s.mid" % filename, json)
 
-        output.play("./mid/%s.mid" % filename)
+        play("./mid/%s.mid" % filename)
