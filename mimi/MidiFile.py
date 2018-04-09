@@ -255,8 +255,23 @@ class MidiFile(mido.MidiFile):
         # set cfg_file to mimi/soundfont/8MBGMSFX.cfg
         cfg_file = os.path.join(module_root_path, "soundfont", "8MBGMSFX.cfg")
 
-        os.system("timidity -c %s %s -Ow -o - | ffmpeg -i - -acodec libmp3lame -ab 256k %s" %
+        # use -map_channel 0.0.0 to map left channel to mono tone mp3 file
+        os.system("timidity -c %s %s -Ow -o - | ffmpeg -i - -acodec libmp3lame -ab 256k -map_channel 0.0.0 %s" %
                   (cfg_file, tmp_file, filename))
+
+    def play(self,filename="tmp"):
+
+        tmp_file = "%s_tmp.mid" % filename
+        self.save(tmp_file)
+        module_root_path = os.path.split(os.path.abspath(__file__))[0]
+
+        # set cfg_file to mimi/soundfont/8MBGMSFX.cfg
+        cfg_file = os.path.join(module_root_path, "soundfont", "8MBGMSFX.cfg")
+
+        # use -map_channel 0.0.0 to map left channel to mono tone mp3 file
+        os.system("timidity -c %s %s -Ow -o - | ffmpeg -i - -map_channel 0.0.0 -f wav - | ffplay -i -" % (cfg_file, tmp_file))
+
+
 
 
 
@@ -271,4 +286,4 @@ if __name__ == "__main__":
     # draw piano roll by pyplot
     # mid.draw_roll()
     # mid.save_npz("gg")
-    mid.save_mp3()
+    mid.play()

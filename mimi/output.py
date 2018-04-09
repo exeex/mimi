@@ -18,9 +18,10 @@ def set_soundfont(dir=None):
 
 def play(filename):
     # play by timidity
-    os.system("timidity -c %s %s  --reverb=d --noise-shaping=4 -EwpvseToz -f" % (cfg_file,filename))
+    # os.system("timidity -c %s %s -A50" % (cfg_file,filename))
 
-    # TODO: on ubuntu linux, have buzz noise (with timidity ver 2.13.2)
+    os.system("timidity -c %s %s -Ow -o - | ffmpeg -i - -map_channel 0.0.0 -f wav - | ffplay -i -" % (cfg_file,filename))
+
 
 
 def midi2wav(mid_file = "gg.mid", outpath = "gg.wav"):
