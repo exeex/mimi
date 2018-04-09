@@ -16,15 +16,16 @@ class MidiFile(mido.MidiFile):
         # assume only 0 or 1 program change event in each channel
         # default instrument is Piano
         self.instrument = [Piano.AcousticGrandPiano for x in range(16)]
-        self.events = self.__get_events()
 
+    def __add__(self, other):
+
+        ret = MidiFile()
+        ret.tracks.append(self.tracks)
+        ret.tracks.append(other.tracks)
+
+        return ret
 
     def get_events(self):
-        return self.events.copy()
-
-    def __get_events(self):
-        mid = self
-        print(mid)
 
         # There is > 16 channel in midi.tracks. However there is only 16 channel related to "music" events.
         # We store music events of 16 channel in the list "events" with form [[ch1],[ch2]....[ch16]]
@@ -33,7 +34,7 @@ class MidiFile(mido.MidiFile):
         events = [[] for x in range(16)]
 
         # Iterate all event in the midi and extract to 16 channel form
-        for track in mid.tracks:
+        for track in self.tracks:
             for msg in track:
                 try:
                     channel = msg.channel
@@ -48,6 +49,17 @@ class MidiFile(mido.MidiFile):
                         print("error", type(msg))
 
         return events
+
+    def get_instrument(self):
+
+        events = self.get_events()
+
+        for idx_channel, channel in enumerate(events):
+            for msg in channel:
+                if msg.type == "program_change":
+                    self.instrument[idx_channel] = msg.program
+                    # print("program_change", " channel:", idx_channel, "pc")
+        return self.instrument
 
     def get_roll(self):
         events = self.get_events()
@@ -172,7 +184,6 @@ class MidiFile(mido.MidiFile):
 
     def draw_roll(self,color_bar=False):
 
-        self.events = self.__get_events()
 
         roll = self.get_roll()
 
@@ -243,12 +254,16 @@ class MidiFile(mido.MidiFile):
             return 500000
 
     def get_total_ticks(self):
+
+        events = self.get_events()
         max_ticks = 0
         for channel in range(16):
-            ticks = sum(msg.time for msg in self.events[channel])
+            ticks = sum(msg.time for msg in events[channel])
             if ticks > max_ticks:
                 max_ticks = ticks
         return max_ticks
+
+
 
 
 if __name__ == "__main__":
