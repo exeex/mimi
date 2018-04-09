@@ -38,7 +38,7 @@ class GeneratorTest(unittest.TestCase):
             # create midi object
 
             mid = MidiFile()
-            track = MidiTrack(instrument=Guitar.AcousticGuitar_nylon)
+            track = MidiTrack(instrument=Piano.ElectricPiano1)
             mid.tracks.append(track)
 
             # get random tab and append to midi track
@@ -50,8 +50,8 @@ class GeneratorTest(unittest.TestCase):
             # save files
 
             mid.save(join(self.mid_path, filename + ".mid"))
-
             array = tab.to_array()
+
             np.save(join(self.npy_path, filename + ".npy"), array)
 
             output.midi2wav(join(self.mid_path, filename + ".mid"), join(self.wav_path, filename + ".wav"))
@@ -60,9 +60,12 @@ class GeneratorTest(unittest.TestCase):
             output.json(join(self.json_path, filename + ".json"), json)
 
 
+            # output.play(join(self.mid_path, filename + ".mid"))
             # mid.draw_roll()
 
     def tearDown(self):
         shutil.rmtree(self.output_path)
+
+
 if __name__ == '__main__':
     unittest.main()
