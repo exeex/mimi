@@ -2,7 +2,6 @@ import os
 from os.path import join, abspath, split
 
 module_root_path = split(abspath(__file__))[0]
-
 # set cfg_file to mimi/soundfont/8MBGMSFX.cfg
 cfg_file = join(module_root_path, "soundfont","8MBGMSFX.cfg")
 
@@ -21,7 +20,8 @@ def play(filename):
     # play by timidity
     os.system("timidity -c %s %s  --reverb=d --noise-shaping=4 -EwpvseToz -f" % (cfg_file,filename))
 
-    # TODO: not work on ubuntu linux
+    # TODO: on ubuntu linux, have buzz noise (with timidity ver 2.13.2)
+
 
 def midi2wav(mid_file = "gg.mid", outpath = "gg.wav"):
     # convert a mid file to wav file
