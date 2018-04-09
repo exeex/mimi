@@ -1,5 +1,6 @@
 import os
 from os.path import join, abspath, split
+import platform
 
 module_root_path = split(abspath(__file__))[0]
 # set cfg_file to mimi/soundfont/8MBGMSFX.cfg
@@ -18,9 +19,13 @@ def set_soundfont(dir=None):
 
 def play(filename):
     # play by timidity
-    # os.system("timidity -c %s %s -A50" % (cfg_file,filename))
+    _platform = platform.system()
+    if _platform == "linux" or _platform == "linux2":
+        os.system(
+            "timidity -c %s %s -Ow -o - | ffmpeg -i - -map_channel 0.0.0 -f wav - | ffplay -i -" % (cfg_file, filename))
+    else:
+        os.system("timidity -c %s %s -A100" % (cfg_file,filename))
 
-    os.system("timidity -c %s %s -Ow -o - | ffmpeg -i - -map_channel 0.0.0 -f wav - | ffplay -i -" % (cfg_file,filename))
 
 
 
