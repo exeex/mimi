@@ -1,9 +1,9 @@
 import mido
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib as mpl
+import os
 from mimi.instrument import *
-from matplotlib.colors import colorConverter
+
+
 
 # inherit the origin mido class
 class MidiFile(mido.MidiFile):
@@ -148,41 +148,11 @@ class MidiFile(mido.MidiFile):
 
         return roll
 
-    def get_roll_image(self):
-        roll = self.get_roll()
-        plt.ioff()
-
-        K = 16
-
-        transparent = colorConverter.to_rgba('black')
-        colors = [mpl.colors.to_rgba(mpl.colors.hsv_to_rgb((i / K, 1, 1)), alpha=1) for i in range(K)]
-        cmaps = [mpl.colors.LinearSegmentedColormap.from_list('my_cmap', [transparent, colors[i]], 128) for i in
-                 range(K)]
-
-        for i in range(K):
-            cmaps[i]._init()  # create the _lut array, with rgba values
-            # create your alpha array and fill the colormap with them.
-            # here it is progressive, but you can create whathever you want
-            alphas = np.linspace(0, 1, cmaps[i].N + 3)
-            cmaps[i]._lut[:, -1] = alphas
-
-        fig = plt.figure(figsize=(4, 3))
-        a1 = fig.add_subplot(111)
-        a1.axis("equal")
-        a1.set_facecolor("black")
-
-        array = []
-
-        for i in range(K):
-            try:
-                img = a1.imshow(roll[i], interpolation='nearest', cmap=cmaps[i], aspect='auto')
-                array.append(img.get_array())
-            except IndexError:
-                pass
-
-        return array
-
     def draw_roll(self,color_bar=False):
+
+        import matplotlib.pyplot as plt
+        import matplotlib as mpl
+        from matplotlib.colors import colorConverter
 
 
         roll = self.get_roll()
@@ -277,16 +247,28 @@ class MidiFile(mido.MidiFile):
         for idx in range(track_nb):
             scipy.misc.toimage(array[idx, :, :], cmin=0.0).save('%s%d.png'%(filename,idx))
 
+    def save_mp3(self,filename="out.mp3"):
+        tmp_file = "%s_tmp.mid" % filename
+        self.save(tmp_file)
+        module_root_path = os.path.split(os.path.abspath(__file__))[0]
+
+        # set cfg_file to mimi/soundfont/8MBGMSFX.cfg
+        cfg_file = os.path.join(module_root_path, "soundfont", "8MBGMSFX.cfg")
+
+        os.system("timidity -c %s %s -Ow -o - | ffmpeg -i - -acodec libmp3lame -ab 256k %s" %
+                  (cfg_file, tmp_file, filename))
+
+
 
 if __name__ == "__main__":
     mid = MidiFile("test_file/1.mid")
 
     # get the list of all events
     # events = mid.get_events()
-
     # get the np array of piano roll image
     roll = mid.get_roll()
 
     # draw piano roll by pyplot
     # mid.draw_roll()
-    mid.save_npz("gg")
+    # mid.save_npz("gg")
+    mid.save_mp3()
