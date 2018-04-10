@@ -2,11 +2,14 @@ import mimi.Mode as Mode
 import numpy as np
 import json
 
+
 class Note:
 
     def __init__(self, pitch: int, time=1/4):
 
         """
+        Single Note Object
+
         usage:
             note1 = Note(0)
             note2 = Note(2,1/8)
@@ -26,6 +29,8 @@ class Note:
 class Chord(Note):
     def __init__(self, *args: Note):
         """
+        Combination of Notes
+
         usage:
             Chord(Note(0),Note(2),Note(4))
 
@@ -45,19 +50,20 @@ class Bar:
     def __init__(self, notes=None, key="C", mode=Mode.major, octave=4, tempo=75, time_sign=(4, 4)):
 
         """
-        init a Bar object (小節物件)
+
+        Bar : 小節物件
 
         usage:
             bar1 = Bar(Note(0), Note(1), Note(2), Note(0, 1/8))
             bar2 = Bar([Chord(Note(0), Note(2), Note(4)), Note(0, 1/8), key="E", mode=mode.minor, octave=4)
 
 
-        :param notes:       list                        # Note/Chord 的 list
-        :param key:         string                      # 調(主音)
-        :param mode:        dict                        # 音階系統(調式) ex. mode.major:大調, mode.minor:小調
-        :param octave:      int                         # 第幾個八度
-        :param tempo:       int                         # 速度(bpm)
-        :param time_sign:   (x,y)                       # 拍號，每小節有x拍，以y分音符為1拍
+        :param notes:       list                        Note/Chord 的 list
+        :param key:         string                      調(主音)
+        :param mode:        dict                        音階系統(調式) ex. mode.major:大調, mode.minor:小調
+        :param octave:      int                         第幾個八度
+        :param tempo:       int                         速度(bpm)
+        :param time_sign:   (x,y)                       拍號，每小節有x拍，以y分音符為1拍
 
         """
 
@@ -183,6 +189,10 @@ class Bar:
 class Tab(Bar):
 
     def __init__(self, *args: Bar):
+        """
+        input series of bar
+        :param args:
+        """
         super(Tab, self).__init__()
         self.bars = list(args)
 

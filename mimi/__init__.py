@@ -5,7 +5,7 @@ import mimi.output
 import mimi.generator
 
 MidiTrack = mimi.MidiTrack.MidiTrack
-MidiFile  = mimi.MidiFile.MidiFile
+MidiFile = mimi.MidiFile.MidiFile
 output = mimi.output
 generator = mimi.generator
 

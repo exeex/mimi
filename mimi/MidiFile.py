@@ -4,16 +4,19 @@ import os
 import platform
 from mimi.instrument import *
 
-# inherit the mido.MidiFile class
+
+
 class MidiFile(mido.MidiFile):
+
     def __init__(self, filename=None):
 
         mido.MidiFile.__init__(self, filename)
         self.sr = 10
         self.meta = {}
         # assume only 0 or 1 program change event in each channel
-        # default instrument is Piano
-        self.instrument = [Piano.AcousticGrandPiano for x in range(16)]
+        # default instrument is Piano in ch.0
+        self.instrument = [-1 for x in range(16)]
+        self.instrument[0] = 1
 
     def __add__(self, other):
 
@@ -25,25 +28,39 @@ class MidiFile(mido.MidiFile):
 
     def get_events(self):
 
+        """
+
+        > "midi event" is equal to "message"
+        > "tracks" is almost equal to "channel"
+
+        :return: list[channel][event_nb]
+        return a list of events in different channel
+        """
+
         # There is > 16 channel in midi.tracks. However there is only 16 channel related to "music" events.
         # We store music events of 16 channel in the list "events" with form [[ch1],[ch2]....[ch16]]
         # Lyrics and meta data used a extra channel which is not include in "events"
+
 
         events = [[] for x in range(16)]
 
         # Iterate all event in the midi and extract to 16 channel form
 
         for idx, track in enumerate(self.tracks):
+
             # remove mido.UnknownMetaMessage in track (which would cause error)
             self.tracks[idx] = [msg for msg in track if not isinstance(msg, mido.UnknownMetaMessage)]
 
         for track in self.tracks:
-
             for msg in track:
                 try:
                     channel = msg.channel
                     events[channel].append(msg)
+
+                # if a msg has no channel
                 except AttributeError:
+                    if isinstance(msg, mido.MetaMessage):
+                        print(msg)
                     continue
 
         return events
@@ -304,7 +321,7 @@ if __name__ == "__main__":
     roll = mid.get_roll()
 
     # draw piano roll by pyplot
-    mid.draw_roll()
+    # mid.draw_roll()
     # mid.save_npz("gg")
     # mid.play()
     # mid.save_mp3()

@@ -2,17 +2,18 @@ import mido
 from mido import Message
 from mimi.instrument import Piano
 from mimi.Mimi import Note,Chord,Bar,Tab
+from typing import Union
 
 
 class MidiTrack(mido.MidiTrack):
 
-    def __init__(self,instrument= Piano.AcousticGrandPiano):
-        super(MidiTrack,self).__init__()
+    def __init__(self, channel=0,instrument= Piano.AcousticGrandPiano):
+        super(MidiTrack, self).__init__()
         self.instrument = instrument
-        self.append(Message('program_change', program=instrument, time=0))
+        self.channel = channel
+        self.append(Message('program_change', program=instrument, time=0, channel=self.channel))
 
-
-    def append_bar(self, bar):
+    def append_bar(self, bar: Union[Bar, Tab]):
         if type(bar) is Bar:
             self.__append_bar(bar)
 
@@ -29,8 +30,8 @@ class MidiTrack(mido.MidiTrack):
                 time = bar.to_time(note)
                 print(pitch, time, note)
 
-                self.append(Message('note_on', note=pitch, velocity=64, time=0))
-                self.append(Message('note_off', note=pitch, velocity=64, time=time))
+                self.append(Message('note_on', note=pitch, velocity=64, time=0, channel=self.channel))
+                self.append(Message('note_off', note=pitch, velocity=64, time=time, channel=self.channel))
 
             elif type(note) is Chord:
 
@@ -40,13 +41,13 @@ class MidiTrack(mido.MidiTrack):
 
                 for chord_note in note.chord:
                     pitch = bar.to_128_pitch(chord_note)
-                    self.append(Message('note_on', note=pitch, velocity=64, time=0))
+                    self.append(Message('note_on', note=pitch, velocity=64, time=0, channel=self.channel))
 
-                self.append(Message('note_off', note=pitch, velocity=64, time=time))
+                self.append(Message('note_off', note=pitch, velocity=64, time=time, channel=self.channel))
 
                 for chord_note in reversed(note.chord[:-1]):
                     pitch = bar.to_128_pitch(chord_note)
-                    self.append(Message('note_off', note=pitch, velocity=64, time=0))
+                    self.append(Message('note_off', note=pitch, velocity=64, time=0, channel=self.channel))
 
             # TODO: Volume control
             # TODO: time shift
