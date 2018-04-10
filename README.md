@@ -22,7 +22,7 @@ future works
 * ffmpeg
 
 ### Windows
-[download timidity++ windows](https://sourceforge.net/projects/timidity/files/TiMidity%2B%2B/TiMidity%2B%2B-CVS/)  
+[download timidity++](https://sourceforge.net/projects/timidity/files/TiMidity%2B%2B/TiMidity%2B%2B-CVS/)  
 [download ffmpeg](https://ffmpeg.zeranoe.com/builds/)  
 After download, add ffmpeg & timidity folder to %PATH%  
 You can create a folder C:\bin, and put only ffmpeg.exe, ffplay.exe and timidity.exe inside  
@@ -34,7 +34,7 @@ Then set C:\bin to %PATH%
 ### mac
 Install homebrew if you haven't installed. In terminal, input:  
 ```/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"```  
-install timidity++  & ffmpeg
+install timidity++  & ffmpeg:  
 ```brew install timidity ffmpeg```  
 
 ## install mimi
