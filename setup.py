@@ -10,8 +10,9 @@ except ImportError:
 setup(
     name='mimi',
     version='1.1b',
-    packages=['mimi'],
+    packages=['mimi','mimi.soundfont'],
     # py_modules=['mimi','mode','output','preprocess','generator'],  # 將模組的metadata關連到setup函式
+    package_data = {"mimi.soundfont": ["*.cfg","*.sf2"]},
     author='exeex',
     author_email='xray0h@gmail.com',
     url='....',
