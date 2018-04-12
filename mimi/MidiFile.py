@@ -5,6 +5,28 @@ import platform
 from mimi.instrument import *
 
 
+module_root_path = os.path.split(os.path.abspath(__file__))[0]          # mimi/
+cfg_file = os.path.join(module_root_path, "soundfont", "soundfont.cfg") # mimi/soundfont/soundfont.cfg
+sf2_folder = os.path.join(module_root_path, "soundfont")                # mimi/soundfont/
+default_sf2 = "8MBGMSFX.SF2"                                            # 8MBGMSFX.SF2
+
+
+def set_soundfont(dir=None):
+
+    if dir is None:
+        with open(cfg_file, 'w') as f:
+            f.write("dir {} \nsoundfont \"{}\" amp=200%".format(sf2_folder, default_sf2))
+    else:
+        with open(cfg_file, 'w') as f:
+
+            folder = os.path.split(dir)[0]
+            sf2 = os.path.split(dir)[1]
+            f.write("dir {} \nsoundfont \"{}\" amp=200%".format(folder, sf2))
+
+
+
+
+
 
 class MidiFile(mido.MidiFile):
 
@@ -15,6 +37,14 @@ class MidiFile(mido.MidiFile):
         self.meta = {}
         # assume only 0 or 1 program change event in each channel
         # default instrument is Piano in ch.0
+
+        if filename is not None:
+            for idx, track in enumerate(self.tracks):
+                # remove mido.UnknownMetaMessage in track (which would cause error)
+                self.tracks[idx] = [msg for msg in track if not isinstance(msg, mido.UnknownMetaMessage)]
+
+
+
         self.instrument = [-1 for x in range(16)]
         self.instrument[0] = 1
 
@@ -46,10 +76,6 @@ class MidiFile(mido.MidiFile):
 
         # Iterate all event in the midi and extract to 16 channel form
 
-        for idx, track in enumerate(self.tracks):
-
-            # remove mido.UnknownMetaMessage in track (which would cause error)
-            self.tracks[idx] = [msg for msg in track if not isinstance(msg, mido.UnknownMetaMessage)]
 
         for track in self.tracks:
             for msg in track:
@@ -294,10 +320,6 @@ class MidiFile(mido.MidiFile):
 
         tmp_file = "%s_tmp.mid" % filename
         self.save(tmp_file)
-        module_root_path = os.path.split(os.path.abspath(__file__))[0]
-
-        # set cfg_file to mimi/soundfont/8MBGMSFX.cfg
-        cfg_file = os.path.join(module_root_path, "soundfont", "8MBGMSFX.cfg")
 
         _platform = platform.system()
         if _platform == "linux" or _platform == "linux2":
@@ -312,16 +334,21 @@ class MidiFile(mido.MidiFile):
         #TODO: save tmp_file in tmp_folder
 
 
+set_soundfont()
+
+
 if __name__ == "__main__":
     mid = MidiFile("test_file/imagine_dragons-believer.mid")
 
     # get the list of all events
     # events = mid.get_events()
     # get the np array of piano roll image
-    roll = mid.get_roll()
+    # roll = mid.get_roll()
 
     # draw piano roll by pyplot
     # mid.draw_roll()
     # mid.save_npz("gg")
-    # mid.play()
+
+    set_soundfont(r"C:\Users\cswu\Desktop\mimi\mimi\soundfont\FluidR3_GM.sf2")
+    mid.play()
     # mid.save_mp3()

@@ -11,6 +11,8 @@
 mimi/soundfont/8MBGMSFX.cfg
 *.mid
 *.mp3
+*.cfg
+*.sf2
 
 # Sensitive or high-churn files:
 .idea/**/dataSources/
