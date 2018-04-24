@@ -15,6 +15,10 @@ future works
 * midi to music xml & xml to midi
 * mp3 to midi 
 
+# How to start?
+
+see [example](https://github.com/exeex/mimi/blob/master/example/multi_channel_generation.py)
+
 # installation
 
 ## install prerequisite
