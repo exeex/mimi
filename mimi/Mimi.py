@@ -5,10 +5,14 @@ import json
 
 class Note:
 
-    def __init__(self, pitch: int, time=1/4):
+    def __init__(self, pitch: int, time=1/4, key_sig: int = 0):
 
         """
         Single Note Object
+
+        pitch :     七聲音階第幾個音
+        key_sig :   升降記號, 升記號#: 1, 降記號b: -1, 無: 0
+        time    :   幾分音符 ex.四分音符=1/4, 八分音符=1/8
 
         usage:
             note1 = Note(0)
@@ -21,6 +25,8 @@ class Note:
 
         self.pitch = pitch
         self.time = time
+        self.key_sig = key_sig
+
 
     def __repr__(self):
         return "{\"note\": [%d, %.3f]}" % (self.pitch, self.time)
@@ -42,6 +48,9 @@ class Chord(Note):
         self.time = args[0].time
         self.chord = list(args)
 
+    def __getitem__(self, index):
+        return self.chord[index]
+
     def __repr__(self):
         return self.chord.__str__().replace("(", "[").replace(")", "]")
 
@@ -51,7 +60,7 @@ class Bar:
 
         """
 
-        Bar : 小節物件
+        小節物件，包含數個 Note or Chord
 
         usage:
             bar1 = Bar(Note(0), Note(1), Note(2), Note(0, 1/8))
@@ -86,6 +95,9 @@ class Bar:
 
         # TODO: init by json
 
+    def __getitem__(self, index):
+        return self.notes[index]
+
     def to_128_pitch(self, note: Note):
 
         """
@@ -98,7 +110,7 @@ class Bar:
         :return: int
 
         """
-        midi_128_pitch = self.mode[note.pitch] + 12 * self.octave + self.key_dict[self.key]
+        midi_128_pitch = self.mode[note.pitch] + note.key_sig + 12 * self.octave + self.key_dict[self.key]
         return midi_128_pitch
 
     def to_time(self, note: Note):
@@ -190,7 +202,7 @@ class Tab(Bar):
 
     def __init__(self, *args: Bar):
         """
-        input series of bar
+        series of Bar
         :param args:
         """
         super(Tab, self).__init__()
@@ -230,3 +242,20 @@ class Tab(Bar):
     def pop(self):
         return self.bars.pop()
 
+if __name__ == "__main__":
+
+
+    # New Bar in key C maj, Octave =4
+    bar = Bar([Note(2), Note(4, 1 / 8), Note(3), Note(4), Note(4, 1 / 8)], key="C", mode=Mode.major, octave=4)
+
+    # New Bar in key C maj, Octave =4, with Chord I maj
+    bar2 = Bar(
+        [Chord(Note(0), Note(2), Note(4)), Note(0, 1 / 8), Note(2, 1 / 8), Chord(Note(0), Note(2), Note(4)),
+         Note(0, 1 / 8),
+         Note(2, 1 / 8)], key="C", mode=Mode.major, octave=4)
+
+
+    print(bar2[0][0])
+
+    # save file
+    # mid.save("test_bar.mid")
