@@ -30,7 +30,8 @@ MidiTrack取出Message：
 
 * channel最多只有16個，track不限
 * 你可以有複數個track放在同一個channel #但不建議
-* 一個channel只配一種樂器，配兩種會有bug
+* 建議一個channel就配一個track
+* 建議一個channel只配一種樂器，配兩種會有bug
 
 #
 
@@ -50,9 +51,9 @@ mid = MidiFile()
 mid.tracks.extend(tracks)
 
 # 對mid物件進行存檔/播放等操作
-mid.draw_roll()
-mid.play()
-# roll = mid.get_roll()                # np.array of pinao roll in 16 channel in shape [channel, pitch, time]
-# mid.save_npz("test.npz")
-# mid.save_png("test.png")
-# mid.save_mp3("test.mp3")
+mid.draw_roll()                         # 用matplot作圖
+mid.play()                              # 用播放器放出聲音, windows和mac預設是用timidity, ubuntu是用ffplay
+# roll = mid.get_roll()                 # np.array of pinao roll in 16 channel in shape [channel, pitch, time]
+# mid.save_npz("test.npz")              # npz中有兩個array, instrument是標記每個channel用啥樂器, 另外一個是pinao roll(draw_roll畫出來的array)
+# mid.save_png("test.png")              # piano roll的圖
+# mid.save_mp3("test.mp3")              # 這個應該不用解釋
