@@ -5,17 +5,46 @@ import platform
 from mimi.instrument import *
 
 
+module_root_path = os.path.split(os.path.abspath(__file__))[0]          # mimi/
+cfg_file = os.path.join(module_root_path, "soundfont", "soundfont.cfg") # mimi/soundfont/soundfont.cfg
+sf2_folder = os.path.join(module_root_path, "soundfont")                # mimi/soundfont/
+default_sf2 = "8MBGMSFX.SF2"                                            # 8MBGMSFX.SF2
+
+
+def set_soundfont(dir=None):
+
+    if dir is None:
+        with open(cfg_file, 'w') as f:
+            f.write("dir {} \nsoundfont \"{}\" amp=200%".format(sf2_folder, default_sf2))
+    else:
+        with open(cfg_file, 'w') as f:
+
+            folder = os.path.split(dir)[0]
+            sf2 = os.path.split(dir)[1]
+            f.write("dir {} \nsoundfont \"{}\" amp=200%".format(folder, sf2))
+
+
+
+
+
 
 class MidiFile(mido.MidiFile):
 
     def __init__(self, filename=None):
 
         mido.MidiFile.__init__(self, filename)
-        self.__remove_unknown_msg()
         self.sr = 10
         self.meta = {}
         # assume only 0 or 1 program change event in each channel
         # default instrument is Piano in ch.0
+
+        if filename is not None:
+            for idx, track in enumerate(self.tracks):
+                # remove mido.UnknownMetaMessage in track (which would cause error)
+                self.tracks[idx] = [msg for msg in track if not isinstance(msg, mido.UnknownMetaMessage)]
+
+
+
         self.instrument = [-1 for x in range(16)]
         self.instrument[0] = 1
 
@@ -26,12 +55,6 @@ class MidiFile(mido.MidiFile):
         ret.tracks.append(other.tracks)
 
         return ret
-
-    def __remove_unknown_msg(self):
-
-        for idx, track in enumerate(self.tracks):
-            # remove mido.UnknownMetaMessage in track (which would cause error)
-            self.tracks[idx] = [msg for msg in track if not isinstance(msg, mido.UnknownMetaMessage)]
 
     def get_events(self):
 
@@ -48,8 +71,11 @@ class MidiFile(mido.MidiFile):
         # We store music events of 16 channel in the list "events" with form [[ch1],[ch2]....[ch16]]
         # Lyrics and meta data used a extra channel which is not include in "events"
 
-        # Iterate all event in the midi and extract to 16 channel form
+
         events = [[] for x in range(16)]
+
+        # Iterate all event in the midi and extract to 16 channel form
+
 
         for track in self.tracks:
             for msg in track:
@@ -268,7 +294,7 @@ class MidiFile(mido.MidiFile):
         for idx in range(track_nb):
             scipy.misc.toimage(array[idx, :, :], cmin=0.0).save('%s%d.png'%(filename,idx))
 
-    def save_mp3(self, filename="out.mp3"):
+    def save_mp3(self,filename="out.mp3"):
         tmp_file = "%s_tmp.mid" % filename
         self.save(tmp_file)
         module_root_path = os.path.split(os.path.abspath(__file__))[0]
@@ -288,34 +314,31 @@ class MidiFile(mido.MidiFile):
         os.remove(tmp_file)
 
         #TODO: save tmp_file in tmp_folder
-        #TODO: set sound font
 
-    def play(self,filename="tmp", ffplay=False):
+
+    def play(self,filename="tmp"):
 
         tmp_file = "%s_tmp.mid" % filename
         self.save(tmp_file)
-        module_root_path = os.path.split(os.path.abspath(__file__))[0]
-
-        # set cfg_file to mimi/soundfont/8MBGMSFX.cfg
-        cfg_file = os.path.join(module_root_path, "soundfont", "8MBGMSFX.cfg")
 
         _platform = platform.system()
-        if _platform == "linux" or _platform == "linux2" or _platform == "Linux" or ffplay is True:
+        if _platform == "linux" or _platform == "linux2" or _platform == "Linux":
             # use -map_channel 0.0.0 to map left channel to mono tone mp3 file
             os.system("timidity -c %s %s -Ow -o - | ffmpeg -i - -map_channel 0.0.0 -f wav - | ffplay -i -" % (
             cfg_file, tmp_file))
         else:
-            pass
             os.system("timidity -c %s %s -A100" % (cfg_file, tmp_file))
 
         os.remove(tmp_file)
 
         #TODO: save tmp_file in tmp_folder
-        #TODO: set sound font
+
+
+set_soundfont()
 
 
 if __name__ == "__main__":
-    mid = MidiFile("/home/cswu/mimi/mimi/test_file/imagine_dragons-believer.mid")
+    mid = MidiFile("test_file/imagine_dragons-believer.mid")
 
     # get the list of all events
     # events = mid.get_events()
@@ -325,5 +348,7 @@ if __name__ == "__main__":
     # draw piano roll by pyplot
     # mid.draw_roll()
     # mid.save_npz("gg")
-    # mid.play()
-    mid.save_mp3("gg.mp3")
+
+    # set_soundfont(r"C:\Users\cswu\Desktop\mimi\mimi\soundfont\FluidR3_GM.sf2")
+    mid.play()
+    # mid.save_mp3()
