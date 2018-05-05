@@ -20,7 +20,7 @@ def set_soundfont(dir=None):
 def play(filename):
     # play by timidity
     _platform = platform.system()
-    if _platform == "linux" or _platform == "linux2":
+    if _platform == "linux" or _platform == "linux2" or _platform == "Linux":
         os.system(
             "timidity -c %s %s -Ow -o - | ffmpeg -i - -map_channel 0.0.0 -f wav - | ffplay -i -" % (cfg_file, filename))
     else:
@@ -50,4 +50,4 @@ if __name__ == "__main__":
     # print(join(split(abspath(__file__))[0],"soundfont"))
     # midi2wav("/Users/cswu/mimi/output/mid/gggg.mid")
     # json("./json/gg.json","{hello world}")
-    set_soundfont()
+    # set_soundfont()
