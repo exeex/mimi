@@ -15,6 +15,10 @@ future works
 * midi to music xml & xml to midi
 * mp3 to midi 
 
+# How to start?
+
+see [example](https://github.com/exeex/mimi/blob/master/example/multi_channel_generation.py)
+
 # installation
 
 ## install prerequisite
@@ -45,6 +49,11 @@ install timidity++  & ffmpeg:
 if you wish not to install this package into the site-package folder,  
 rather than link the package to the folder you just download, you can install in this way:  
 ```python setup.py develop```
+
+2018/4/18 Note:  
+發現python setup.py install安裝會找不到cfg檔  
+請先改用develop方式安裝  
+python setup.py develop
 
 
 

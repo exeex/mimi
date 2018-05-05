@@ -1,4 +1,4 @@
-import mimi
+from mimi import MidiFile
 
-mid = mimi.MidiFile("test.mid")
+mid = MidiFile("test.mid")
 mid.draw_roll()
