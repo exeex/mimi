@@ -44,7 +44,7 @@ tracks = [MidiTrack(channel=0, instrument=Piano.AcousticGrandPiano),
 
 # 對每個track生成隨機音符/和弦
 for track in tracks:
-    track.append_bar(generator.get_random_tab(tempo=70, key="C"))
+    track.append(generator.get_random_tab(tempo=70, key="C"))
 
 # 把tracks放到MidiFile物件中
 mid = MidiFile()

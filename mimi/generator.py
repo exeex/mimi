@@ -110,7 +110,7 @@ if __name__ == "__main__":
         mid = MidiFile()
         track = MidiTrack(instrument=Piano.ElectricPiano1)
         mid.tracks.append(track)
-        track.append_bar(tab)
+        track.append(tab)
 
         mid.save("./mid/%s.mid" % filename)
 

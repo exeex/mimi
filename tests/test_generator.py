@@ -45,7 +45,7 @@ class GeneratorTest(unittest.TestCase):
 
             tab = generator.get_random_tab(tempo=70)
             filename = "%s" % str(x)
-            track.append_bar(tab)
+            track.append(tab)
 
             # save files
 

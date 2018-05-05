@@ -27,8 +27,8 @@ class MimiTest(unittest.TestCase):
         mid.tracks.append(track)
 
         # append bar to track
-        track.append_bar(bar)
-        track.append_bar(bar2)
+        track.append(bar)
+        track.append(bar2)
 
         # save file
         # mid.save("test_bar.mid")
@@ -43,7 +43,7 @@ class MimiTest(unittest.TestCase):
         # append tab to track
         tab = Tab(bar, bar2, bar)
         tab.append(bar2)
-        track.append_bar(tab)
+        track.append(tab)
         # mid.save("test_tab.mid")
 
 

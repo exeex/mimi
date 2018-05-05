@@ -54,6 +54,26 @@ class Chord(Note):
     def __repr__(self):
         return self.chord.__str__().replace("(", "[").replace(")", "]")
 
+class AbsNote(Note):
+    def __init__(self, pitch: int, time=1/4):
+        """
+        Combination of Notes
+
+        usage:
+            Chord(Note(0),Note(2),Note(4))
+
+        放在同一個Chord裡的音符會一起被播放，一起結束
+        :param args: tuple of Note      #
+        """
+        super(Note, self).__init__()
+        self.pitch = pitch
+        self.time = time
+
+
+    def __repr__(self):
+        return "{\"note\": [%d, %.3f]}" % (self.pitch, self.time)
+
+
 
 class Bar:
     def __init__(self, notes=None, key="C", mode=Mode.major, octave=4, tempo=75, time_sign=(4, 4)):

@@ -9,7 +9,7 @@ except ImportError:
 
 setup(
     name='mimi',
-    version='1.1c',
+    version='1.1d-beta',
     packages=['mimi'],
     # py_modules=['mimi','mode','output','preprocess','generator'],  # 將模組的metadata關連到setup函式
     author='exeex',
