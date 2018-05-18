@@ -4,15 +4,13 @@ import os
 import platform
 from mimi.instrument import *
 
-
-module_root_path = os.path.split(os.path.abspath(__file__))[0]          # mimi/
-cfg_file = os.path.join(module_root_path, "soundfont", "soundfont.cfg") # mimi/soundfont/soundfont.cfg
-sf2_folder = os.path.join(module_root_path, "soundfont")                # mimi/soundfont/
-default_sf2 = "8MBGMSFX.SF2"                                            # 8MBGMSFX.SF2
+module_root_path = os.path.split(os.path.abspath(__file__))[0]  # mimi/
+cfg_file = os.path.join(module_root_path, "soundfont", "soundfont.cfg")  # mimi/soundfont/soundfont.cfg
+sf2_folder = os.path.join(module_root_path, "soundfont")  # mimi/soundfont/
+default_sf2 = "8MBGMSFX.SF2"  # 8MBGMSFX.SF2
 
 
 def set_soundfont(dir=None):
-
     if dir is None:
         with open(cfg_file, 'w') as f:
             f.write("dir {} \nsoundfont \"{}\" amp=200%".format(sf2_folder, default_sf2))
@@ -22,10 +20,6 @@ def set_soundfont(dir=None):
             folder = os.path.split(dir)[0]
             sf2 = os.path.split(dir)[1]
             f.write("dir {} \nsoundfont \"{}\" amp=200%".format(folder, sf2))
-
-
-
-
 
 
 class MidiFile(mido.MidiFile):
@@ -42,8 +36,6 @@ class MidiFile(mido.MidiFile):
             for idx, track in enumerate(self.tracks):
                 # remove mido.UnknownMetaMessage in track (which would cause error)
                 self.tracks[idx] = [msg for msg in track if not isinstance(msg, mido.UnknownMetaMessage)]
-
-
 
         self.instrument = [-1 for x in range(16)]
         self.instrument[0] = 1
@@ -71,11 +63,9 @@ class MidiFile(mido.MidiFile):
         # We store music events of 16 channel in the list "events" with form [[ch1],[ch2]....[ch16]]
         # Lyrics and meta data used a extra channel which is not include in "events"
 
-
         events = [[] for x in range(16)]
 
         # Iterate all event in the midi and extract to 16 channel form
-
 
         for track in self.tracks:
             for msg in track:
@@ -117,7 +107,6 @@ class MidiFile(mido.MidiFile):
         # use a register array to save the state(no/off) for each key
         note_register = [int(-1) for x in range(128)]
 
-
         for idx_channel, channel in enumerate(events):
 
             time_counter = 0
@@ -138,7 +127,8 @@ class MidiFile(mido.MidiFile):
 
                 if msg.type == "program_change":
                     self.instrument[idx_channel] = msg.program
-                    print("program_change"," channel:", idx_channel, "pc", msg.program, "time", time_counter, "duration", msg.time)
+                    print("program_change", " channel:", idx_channel, "pc", msg.program, "time", time_counter,
+                          "duration", msg.time)
 
                 if msg.type == "note_on":
                     print("\t note on ", msg.note, "time", time_counter, "duration", msg.time, "velocity", msg.velocity)
@@ -190,7 +180,7 @@ class MidiFile(mido.MidiFile):
 
         return roll
 
-    def draw_roll(self,color_bar=False):
+    def draw_roll(self, color_bar=False):
 
         try:
             import matplotlib.pyplot as plt
@@ -211,7 +201,7 @@ class MidiFile(mido.MidiFile):
         # change unit of time axis from tick to second
         tick = self.get_total_ticks()
         second = mido.tick2second(tick, self.ticks_per_beat, self.get_tempo())
-        print("midi length: ",second,"sec")
+        print("midi length: ", second, "sec")
         if second > 10:
             x_label_period_sec = second // 10
         else:
@@ -296,12 +286,14 @@ class MidiFile(mido.MidiFile):
         track_nb = len(self.tracks)
 
         for idx in range(track_nb):
-            scipy.misc.toimage(array[idx, :, :], cmin=0.0).save('%s%d.png'%(filename,idx))
+            scipy.misc.toimage(array[idx, :, :], cmin=0.0).save('%s%d.png' % (filename, idx))
 
-    def save_mp3(self,filename="out.mp3"):
+    def save_mp3(self, filename="out.mp3"):
         tmp_file = "%s_tmp.mid" % filename
         self.save(tmp_file)
         module_root_path = os.path.split(os.path.abspath(__file__))[0]
+
+        total_time = self.get_seconds()
 
         # set cfg_file to mimi/soundfont/8MBGMSFX.cfg
         cfg_file = os.path.join(module_root_path, "soundfont", "8MBGMSFX.cfg")
@@ -309,18 +301,18 @@ class MidiFile(mido.MidiFile):
         _platform = platform.system()
         if _platform == "linux" or _platform == "linux2" or _platform == "Linux":
             # use -map_channel 0.0.0 to map left channel to mono tone mp3 file
-            os.system("timidity -c %s %s -Ow -o - | ffmpeg -i - -acodec libmp3lame -ab 256k -map_channel 0.0.0 %s" %
-                      (cfg_file, tmp_file, filename))
+            os.system(
+                "timidity -c %s %s -Ow -o - | ffmpeg -t %f -i - -acodec libmp3lame -ab 256k -map_channel 0.0.0 %s" %
+                (cfg_file, tmp_file, total_time, filename))
         else:
-            os.system("timidity -c %s %s -Ow -o - | ffmpeg -i - -acodec libmp3lame -ab 256k %s" %
-                      (cfg_file, tmp_file, filename))
+            os.system("timidity -c %s %s -Ow -o - | ffmpeg -t %f -i - -acodec libmp3lame -ab 256k %s" %
+                      (cfg_file, tmp_file, total_time, filename))
 
         os.remove(tmp_file)
 
-        #TODO: save tmp_file in tmp_folder
+        # TODO: save tmp_file in tmp_folder
 
-
-    def play(self,filename="tmp"):
+    def play(self, filename="tmp"):
 
         tmp_file = "%s_tmp.mid" % filename
         self.save(tmp_file)
@@ -329,17 +321,16 @@ class MidiFile(mido.MidiFile):
         if _platform == "linux" or _platform == "linux2" or _platform == "Linux":
             # use -map_channel 0.0.0 to map left channel to mono tone mp3 file
             os.system("timidity -c %s %s -Ow -o - | ffmpeg -i - -map_channel 0.0.0 -f wav - | ffplay -i -" % (
-            cfg_file, tmp_file))
+                cfg_file, tmp_file))
         else:
             os.system("timidity -c %s %s -A100" % (cfg_file, tmp_file))
 
         os.remove(tmp_file)
 
-        #TODO: save tmp_file in tmp_folder
+        # TODO: save tmp_file in tmp_folder
 
 
 set_soundfont()
-
 
 if __name__ == "__main__":
     mid = MidiFile("test_file/imagine_dragons-believer.mid")
