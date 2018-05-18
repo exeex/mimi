@@ -261,6 +261,10 @@ class MidiFile(mido.MidiFile):
         plt.ion()
         plt.show(block=True)
 
+    def get_seconds(self):
+        tick = self.get_total_ticks()
+        return mido.tick2second(tick, self.ticks_per_beat, self.get_tempo())
+
     def get_tempo(self):
         try:
             return self.meta["set_tempo"]["tempo"]
