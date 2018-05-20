@@ -75,7 +75,7 @@ def get_random_tab(key=None, mode=None, octave=None, tempo=None):
     print(i, mode)
 
     if octave is None:
-        octave = random.randint(2, 5)
+        octave = random.randint(3, 5)
     print(octave)
 
     if tempo is None:
