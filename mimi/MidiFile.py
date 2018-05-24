@@ -3,6 +3,7 @@ import numpy as np
 import os
 import platform
 from mimi.instrument import *
+from mido import Message
 
 module_root_path = os.path.split(os.path.abspath(__file__))[0]  # mimi/
 cfg_file = os.path.join(module_root_path, "soundfont", "soundfont.cfg")  # mimi/soundfont/soundfont.cfg
@@ -27,7 +28,7 @@ class MidiFile(mido.MidiFile):
     def __init__(self, filename=None):
 
         mido.MidiFile.__init__(self, filename)
-        self.sr = 10
+
         self.meta = {}
         # assume only 0 or 1 program change event in each channel
         # default instrument is Piano in ch.0
@@ -63,7 +64,7 @@ class MidiFile(mido.MidiFile):
         # We store music events of 16 channel in the list "events" with form [[ch1],[ch2]....[ch16]]
         # Lyrics and meta data used a extra channel which is not include in "events"
 
-        events = [[] for x in range(16)]
+        events = [[] for _ in range(16)]
 
         # Iterate all event in the midi and extract to 16 channel form
 
@@ -85,6 +86,8 @@ class MidiFile(mido.MidiFile):
 
         events = self.get_events()
 
+        # Now we just assume there is only 1 program change in each channel
+
         for idx_channel, channel in enumerate(events):
             for msg in channel:
                 if msg.type == "program_change":
@@ -92,11 +95,69 @@ class MidiFile(mido.MidiFile):
                     # print("program_change", " channel:", idx_channel, "pc")
         return self.instrument
 
-    def get_roll(self):
+    def get_events_from_roll(self, roll: np.ndarray):
+
+        chan, pitch, tick = roll.shape
+
+        if chan != 16:
+            raise IndexError
+        if pitch != 128:
+            raise IndexError
+
+        tracks = [self._get_events_from_roll(roll[i, :, :], i) for i in range(16)]
+
+        return tracks
+
+    def _get_events_from_roll(self, chan: np.ndarray, chan_idx):
+
+        chan = (chan > 0) * 1  # binarize
+        chan = np.pad(chan, [[0, 0], [1, 0]], mode='constant', constant_values=[0, 0])
+        diff = np.diff(chan, axis=1)  # TODO: pad zero left
+        on_set = diff > 0
+        off_set = diff < 0
+
+        on_set_indices = np.where(on_set)
+        on_set_indices = [(on_set_indices[0][i], on_set_indices[1][i], 'on') for i in range(len(on_set_indices[0]))]
+
+        off_set_indices = np.where(off_set)
+        off_set_indices = [(off_set_indices[0][i], off_set_indices[1][i], 'off') for i in range(len(off_set_indices[0]))]
+
+        # TODO: fix events
+        events = sorted(off_set_indices + on_set_indices, key=lambda x: x[1])
+        print(events)
+
+        # self.append(Message('note_off', note=object.pitch, velocity=64, time=object.time, channel=self.channel))
+
+        try:
+            time_intervals = [events[0][1]] + [events[i + 1][1] - events[i][1] for i in range(len(events) - 1)]
+            # print(time_intervals)
+        except IndexError:
+            print(events)
+            return []
+
+        track = []
+        for idx, event in enumerate(events):
+            if event[2] == 'on':
+                # TODO: velocity & volume
+                track.append(Message('note_on', note=event[0], velocity=64,
+                                     time=time_intervals[idx], channel=chan_idx))
+
+            if event[2] == 'off':
+                # TODO: velocity & volume
+                track.append(Message('note_off', note=event[0], velocity=64,
+                                     time=time_intervals[idx], channel=chan_idx))
+
+        # pitch, ticks = diff.shape
+
+        # for x in range(ticks):
+
+        return track
+
+    def get_roll(self, down_sample_rate=10):
         events = self.get_events()
         # Identify events, then translate to piano roll
         # choose a sample ratio(sr) to down-sample through time axis
-        sr = self.sr
+        sr = down_sample_rate
 
         # compute total length in tick unit
         length = self.get_total_ticks()
@@ -105,7 +166,7 @@ class MidiFile(mido.MidiFile):
         roll = np.zeros((16, 128, length // sr), dtype="int8")
 
         # use a register array to save the state(no/off) for each key
-        note_register = [int(-1) for x in range(128)]
+        note_register = [int(-1) for _ in range(128)]
 
         for idx_channel, channel in enumerate(events):
 
@@ -188,8 +249,8 @@ class MidiFile(mido.MidiFile):
             from matplotlib.colors import colorConverter
         except ImportError:
             raise ImportError('You need to install matplotlib. (pip install matplotlib)')
-
-        roll = self.get_roll()
+        sr = 10
+        roll = self.get_roll(down_sample_rate=sr)
 
         # build and set fig obj
         plt.ioff()
@@ -207,7 +268,7 @@ class MidiFile(mido.MidiFile):
         else:
             x_label_period_sec = second / 10  # ms
         # print(x_label_period_sec)
-        x_label_interval = mido.second2tick(x_label_period_sec, self.ticks_per_beat, self.get_tempo()) / self.sr
+        x_label_interval = mido.second2tick(x_label_period_sec, self.ticks_per_beat, self.get_tempo()) / sr
         # print(x_label_interval)
         plt.xticks([int(x * x_label_interval) for x in range(20)],
                    [round(x * x_label_period_sec, 2) for x in range(20)])
@@ -233,7 +294,7 @@ class MidiFile(mido.MidiFile):
         # draw piano roll and stack image on a1
         for i in range(channel_nb):
             try:
-                a1.imshow(roll[i], origin="lower", interpolation='nearest', cmap=cmaps[i], aspect='auto')
+                a1.imshow(roll[i], origin="lower", interpolation='nearest', aspect='auto', cmap=cmaps[i])
             except IndexError:
                 pass
 
@@ -333,7 +394,25 @@ class MidiFile(mido.MidiFile):
 set_soundfont()
 
 if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+    import scipy.signal
+
     mid = MidiFile("test_file/imagine_dragons-believer.mid")
+    plt.axis('equal')
+    r = mid.get_roll(10)
+    # tracks = mid.get_events_from_roll(r)
+
+    l = r[:, :, 3000:6000]
+    plt.imshow(l[3,:,:], origin="lower", interpolation='nearest', aspect='auto')
+    plt.show()
+
+    l2 = mid.get_events_from_roll(l)
+
+    mid2 = MidiFile()
+    mid2.tracks.extend(l2)
+    l3 = mid2.get_roll()
+    plt.imshow(l3[3, :, :], origin="lower", interpolation='nearest', aspect='auto')
+    plt.show()
 
     # get the list of all events
     # events = mid.get_events()
@@ -345,5 +424,5 @@ if __name__ == "__main__":
     # mid.save_npz("gg")
 
     # set_soundfont(r"C:\Users\cswu\Desktop\mimi\mimi\soundfont\FluidR3_GM.sf2")
-    mid.play()
+    # mid.play()
     # mid.save_mp3()
