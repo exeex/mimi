@@ -4,6 +4,7 @@ import os
 import platform
 from mimi.instrument import *
 from mido import Message
+import sys
 
 module_root_path = os.path.split(os.path.abspath(__file__))[0]  # mimi/
 cfg_file = os.path.join(module_root_path, "soundfont", "soundfont.cfg")  # mimi/soundfont/soundfont.cfg
@@ -27,19 +28,36 @@ class MidiFile(mido.MidiFile):
 
     def __init__(self, filename=None):
 
-        mido.MidiFile.__init__(self, filename)
+        ext = os.path.split(filename)[-1].split('.')[-1]
+        print(ext)
+        if ext == 'npz':
+            import pypianoroll
+            mido.MidiFile.__init__(self)
+            data = pypianoroll.load(filename)
+            track_len = len(data.tracks)
 
-        self.meta = {}
-        # assume only 0 or 1 program change event in each channel
-        # default instrument is Piano in ch.0
+            self.tracks = [self._get_events_from_roll(data.tracks[i].get_pianoroll_copy().transpose(), i)
+                           for i in range(track_len)]
 
-        if filename is not None:
-            for idx, track in enumerate(self.tracks):
-                # remove mido.UnknownMetaMessage in track (which would cause error)
-                self.tracks[idx] = [msg for msg in track if not isinstance(msg, mido.UnknownMetaMessage)]
+            self.instrument = [track.program for track in data.tracks]
+            self.ticks_per_beat = data.beat_resolution
 
-        self.instrument = [-1 for x in range(16)]
-        self.instrument[0] = 1
+
+
+        elif ext == 'mid':
+            mido.MidiFile.__init__(self, filename)
+
+            self.meta = {}
+            # assume only 0 or 1 program change event in each channel
+            # default instrument is Piano in ch.0
+
+            if filename is not None:
+                for idx, track in enumerate(self.tracks):
+                    # remove mido.UnknownMetaMessage in track (which would cause error)
+                    self.tracks[idx] = [msg for msg in track if not isinstance(msg, mido.UnknownMetaMessage)]
+
+            self.instrument = [-1 for _ in range(16)]
+            self.instrument[0] = 1
 
     def __add__(self, other):
 
@@ -77,7 +95,7 @@ class MidiFile(mido.MidiFile):
                 # if a msg has no channel
                 except AttributeError:
                     if isinstance(msg, mido.MetaMessage):
-                        print(msg)
+                        print(msg, file=sys.stderr)
                     continue
 
         return events
@@ -96,23 +114,34 @@ class MidiFile(mido.MidiFile):
         return self.instrument
 
     def get_events_from_roll(self, roll: np.ndarray):
+        """
+        :param roll: np.ndarray of piano roll in shape (channel, pitch, time)
+        :return: list of tracks
+        """
 
         chan, pitch, tick = roll.shape
 
-        if chan != 16:
-            raise IndexError
+        if chan > 16:
+            raise IndexError("channel number is greater than 16")
         if pitch != 128:
-            raise IndexError
+            raise IndexError("pitch number is not 128")
 
-        tracks = [self._get_events_from_roll(roll[i, :, :], i) for i in range(16)]
+        tracks = [self._get_events_from_roll(roll[i, :, :], i) for i in range(chan)]
 
         return tracks
 
-    def _get_events_from_roll(self, chan: np.ndarray, chan_idx):
+    def _get_events_from_roll(self, raw_chan: np.ndarray, chan_idx):
 
-        chan = (chan > 0) * 1  # binarize
-        chan = np.pad(chan, [[0, 0], [1, 0]], mode='constant', constant_values=[0, 0])
-        diff = np.diff(chan, axis=1)  # TODO: pad zero left
+        """
+        :param raw_chan: data of a channel of roll, in shape (pitch, time). ex. (128, 3314)
+        :param chan_idx: set output to certain channel idx
+        :return: track, a midi events list (list of Mido.Message)
+        """
+
+        chan = (raw_chan > 0) * 1  # binarization
+        chan = np.pad(chan, [[0, 0], [1, 0]], mode='constant', constant_values=[0, 0])  # pad zero left
+
+        diff = np.diff(chan, axis=1)
         on_set = diff > 0
         off_set = diff < 0
 
@@ -120,9 +149,9 @@ class MidiFile(mido.MidiFile):
         on_set_indices = [(on_set_indices[0][i], on_set_indices[1][i], 'on') for i in range(len(on_set_indices[0]))]
 
         off_set_indices = np.where(off_set)
-        off_set_indices = [(off_set_indices[0][i], off_set_indices[1][i], 'off') for i in range(len(off_set_indices[0]))]
+        off_set_indices = [(off_set_indices[0][i], off_set_indices[1][i], 'off') for i in
+                           range(len(off_set_indices[0]))]
 
-        # TODO: fix events
         events = sorted(off_set_indices + on_set_indices, key=lambda x: x[1])
         print(events)
 
@@ -137,15 +166,22 @@ class MidiFile(mido.MidiFile):
 
         track = []
         for idx, event in enumerate(events):
+
+            note = event[0]
+            time = event[1]
+            velocity = raw_chan[note, time]
             if event[2] == 'on':
-                # TODO: velocity & volume
-                track.append(Message('note_on', note=event[0], velocity=64,
+                # print(chan[note, time_intervals])
+                track.append(Message('note_on', note=note, velocity=64,
                                      time=time_intervals[idx], channel=chan_idx))
 
+                # print("on", note, velocity)
+
             if event[2] == 'off':
-                # TODO: velocity & volume
-                track.append(Message('note_off', note=event[0], velocity=64,
+                # print(chan[note, time_intervals])
+                track.append(Message('note_off', note=note, velocity=64,
                                      time=time_intervals[idx], channel=chan_idx))
+                # print("off", note, velocity)
 
         # pitch, ticks = diff.shape
 
@@ -153,7 +189,13 @@ class MidiFile(mido.MidiFile):
 
         return track
 
-    def get_roll(self, down_sample_rate=10):
+    def get_roll(self, down_sample_rate=10, debug=False):
+
+        if debug:
+            msg_chan = sys.stdout
+        else:
+            msg_chan = sys.stderr
+
         events = self.get_events()
         # Identify events, then translate to piano roll
         # choose a sample ratio(sr) to down-sample through time axis
@@ -175,27 +217,28 @@ class MidiFile(mido.MidiFile):
             # Volume would change by control change event (cc) cc7 & cc11
             # Volume 0-100 is mapped to 0-127
 
-            print("channel", idx_channel, "start")
+            print("channel", idx_channel, "start", file=msg_chan)
             for msg in channel:
                 if msg.type == "control_change":
                     if msg.control == 7:
                         volume = msg.value
                         # directly assign volume
                     if msg.control == 11:
-                        volume = volume * msg.value // 127
+                        volume = volume * msg.value // 100
                         # change volume by percentage
                         # print("cc", msg.control, msg.value, "duration", msg.time)
 
                 if msg.type == "program_change":
                     self.instrument[idx_channel] = msg.program
                     print("program_change", " channel:", idx_channel, "pc", msg.program, "time", time_counter,
-                          "duration", msg.time)
+                          "duration", msg.time, file=msg_chan)
 
                 if msg.type == "note_on":
-                    print("\t note on ", msg.note, "time", time_counter, "duration", msg.time, "velocity", msg.velocity)
+                    print("\t note on ", msg.note, "time", time_counter, "duration", msg.time, "velocity", msg.velocity,
+                          file=msg_chan)
                     note_on_start_time = time_counter // sr
                     note_on_end_time = (time_counter + msg.time) // sr
-                    intensity = volume * msg.velocity // 127
+                    intensity = volume * msg.velocity // 100
 
                     # When a note_on event *ends* the note start to be play
                     # Record end time of note_on event if there is no value in register
@@ -210,7 +253,8 @@ class MidiFile(mido.MidiFile):
                         note_register[msg.note] = (note_on_end_time, intensity)
 
                 if msg.type == "note_off":
-                    print("\t note off", msg.note, "time", time_counter, "duration", msg.time, "velocity", msg.velocity)
+                    print("\t note off", msg.note, "time", time_counter, "duration", msg.time, "velocity", msg.velocity,
+                          file=msg_chan)
                     note_off_start_time = time_counter // sr
                     note_off_end_time = (time_counter + msg.time) // sr
                     note_on_end_time = note_register[msg.note][0]
@@ -222,10 +266,9 @@ class MidiFile(mido.MidiFile):
 
                 time_counter += msg.time
 
-                # TODO: velocity -> done, but not verified
-                # TODO: Pitch wheel
+                # TODO: verified volume control function
+                # TODO: Pitch wheel not implement yet
                 # TODO: Channel - > Program Changed / Timbre catagory
-                # TODO: real time scale of roll
 
             # if there is a note not closed at the end of a channel, close it
             for key, data in enumerate(note_register):
@@ -237,7 +280,7 @@ class MidiFile(mido.MidiFile):
                     roll[idx_channel, key, note_on_end_time:] = intensity
                 note_register[idx_channel] = -1
 
-            print("channel", idx_channel, "end")
+            print("channel", idx_channel, "end", file=msg_chan)
 
         return roll
 
@@ -397,22 +440,40 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import scipy.signal
 
-    mid = MidiFile("test_file/imagine_dragons-believer.mid")
-    plt.axis('equal')
-    r = mid.get_roll(10)
+    #節奏太快纏在一起, 樂器問題? 可能會導致辨識問題
+    #mid = MidiFile("/home/cswu/mimi/lpd_cleansed/I/C/E/TRICEWV128F9344F5B/360594065eeb8886141da58444f4378c.npz")
+
+    #channel 太多 出error
+    # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/I/C/J/TRICJZW128F9354788/586c0e705100a83a6bb6383d8ea74714.npz")
+
+    #都是鋼琴 只有少量其他樂器
+    # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/M/C/I/TRMCIAX128F92F0D67/daa361f7becf04fb30798dc7e6df6630.npz")
+
+    #都是鋼琴 大量重複和弦
+    # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/M/T/E/TRMTEFZ128F426962A/807a0b105660918ae88fdb04fc072092.npz")
+
+    #滑音很怪
+    mid = MidiFile("/home/cswu/mimi/lpd_cleansed/M/T/N/TRMTNZK128F4226EF5/2645d5ca4f73bc2e778f2c813a1e1ab5.npz")
+    mid.play()
+    print(mid.instrument)
+
+
+    # mid = MidiFile("test_file/imagine_dragons-believer.mid")
+    # plt.axis('equal')
+    # r = mid.get_roll(10)
     # tracks = mid.get_events_from_roll(r)
-
-    l = r[:, :, 3000:6000]
-    plt.imshow(l[3,:,:], origin="lower", interpolation='nearest', aspect='auto')
-    plt.show()
-
-    l2 = mid.get_events_from_roll(l)
-
-    mid2 = MidiFile()
-    mid2.tracks.extend(l2)
-    l3 = mid2.get_roll()
-    plt.imshow(l3[3, :, :], origin="lower", interpolation='nearest', aspect='auto')
-    plt.show()
+    #
+    # l = r[:, :, 3000:6000]
+    # plt.imshow(l[3, :, :], origin="lower", interpolation='nearest', aspect='auto')
+    # plt.show()
+    #
+    # l2 = mid.get_events_from_roll(l)
+    #
+    # mid2 = MidiFile()
+    # mid2.tracks.extend(l2)
+    # l3 = mid2.get_roll()
+    # plt.imshow(l3[3, :, :], origin="lower", interpolation='nearest', aspect='auto')
+    # plt.show()
 
     # get the list of all events
     # events = mid.get_events()

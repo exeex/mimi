@@ -3,22 +3,19 @@ import unittest
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 class TestMidiFile(unittest.TestCase):
 
-
-
     def setUp(self):
-
         self.mid = MidiFile("../mimi/test_file/imagine_dragons-believer.mid")
         self.roll = self.mid.get_roll(10)
         self.test_roll = self.roll[:, :, 3000:6000]
 
-
     def test__get_events_from_roll(self):
-        plt.imshow(self.test_roll[3,:,:], origin="lower", interpolation='nearest', aspect='auto')
+        plt.imshow(self.test_roll[3, :, :], origin="lower", interpolation='nearest', aspect='auto')
         plt.show()
 
-        track = self.mid._get_events_from_roll(self.test_roll[3,:,:], 3)
+        track = self.mid._get_events_from_roll(self.test_roll[3, :, :], 3)
 
         mid2 = MidiFile()
         mid2.tracks.append(track)
@@ -27,15 +24,18 @@ class TestMidiFile(unittest.TestCase):
         plt.imshow(roll, origin="lower", interpolation='nearest', aspect='auto')
         plt.show()
 
-        diff = ((roll > 0) *1 - (self.test_roll[3,:,:roll.shape[1]] > 0)*1)
+        diff = ((roll > 0) * 1 - (self.test_roll[3, :, :roll.shape[1]] > 0) * 1)
+        diff2 = roll - self.test_roll[3, :, :roll.shape[1]]
 
+        ret1 = diff.sum()
+        if ret1 != 0:
+            raise ValueError
 
-        print(diff.sum())
-
+        ret2 = (diff2.sum())
+        if ret2 != 0:
+            raise ValueError
 
     def test_get_events_from_roll(self):
-
-
         plt.imshow(self.test_roll[3, :, :], origin="lower", interpolation='nearest', aspect='auto')
         plt.show()
 
