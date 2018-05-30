@@ -27,37 +27,50 @@ def set_soundfont(dir=None):
 class MidiFile(mido.MidiFile):
 
     def __init__(self, filename=None):
+        if filename is not None:
+            ext = os.path.split(filename)[-1].split('.')[-1]
+            print(ext)
 
-        ext = os.path.split(filename)[-1].split('.')[-1]
-        print(ext)
-        if ext == 'npz':
-            import pypianoroll
-            mido.MidiFile.__init__(self)
-            data = pypianoroll.load(filename)
-            track_len = len(data.tracks)
+            if ext == 'npz':
+                import pypianoroll
+                mido.MidiFile.__init__(self)
+                data = pypianoroll.load(filename)
+                track_len = len(data.tracks)
 
-            self.tracks = [self._get_events_from_roll(data.tracks[i].get_pianoroll_copy().transpose(), i)
-                           for i in range(track_len)]
+                self.tracks = [self._get_events_from_roll(data.tracks[i].get_pianoroll_copy().transpose(), i)
+                               for i in range(track_len)]
 
-            self.instrument = [track.program for track in data.tracks]
-            self.ticks_per_beat = data.beat_resolution
-
+                self.instrument = [track.program for track in data.tracks]
+                self.ticks_per_beat = data.beat_resolution
+                # TODO: set tempo by meta message
 
 
-        elif ext == 'mid':
-            mido.MidiFile.__init__(self, filename)
+            elif ext == 'mid':
+                mido.MidiFile.__init__(self, filename)
 
-            self.meta = {}
-            # assume only 0 or 1 program change event in each channel
-            # default instrument is Piano in ch.0
+                self.meta = {}
+                # assume only 0 or 1 program change event in each channel
+                # default instrument is Piano in ch.0
 
-            if filename is not None:
                 for idx, track in enumerate(self.tracks):
                     # remove mido.UnknownMetaMessage in track (which would cause error)
                     self.tracks[idx] = [msg for msg in track if not isinstance(msg, mido.UnknownMetaMessage)]
 
+                self.instrument = [-1 for _ in range(16)]
+                self.instrument[0] = 1
+
+                # TODO: set tempo by meta message
+
+        else:
+            mido.MidiFile.__init__(self, filename)
+
+            self.meta = {}
             self.instrument = [-1 for _ in range(16)]
             self.instrument[0] = 1
+
+            # TODO: set tempo by meta message
+
+
 
     def __add__(self, other):
 

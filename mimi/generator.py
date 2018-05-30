@@ -112,14 +112,16 @@ if __name__ == "__main__":
         mid.tracks.append(track)
         track.append(tab)
 
-        mid.save("./mid/%s.mid" % filename)
+        # mid.save("./mid/%s.mid" % filename)
+        #
+        # array = tab.to_array()
+        # np.save("./npy/%s.npy" % filename, array)
+        #
+        # midi2wav("./mid/%s.mid" % filename, "./wav/%s.wav" % filename)
+        #
+        # json = tab.to_json()
+        # json("./json/%s.mid" % filename, json)
+        #
+        # play("./%s.mid" % filename)
 
-        array = tab.to_array()
-        np.save("./npy/%s.npy" % filename, array)
-
-        midi2wav("./mid/%s.mid" % filename, "./wav/%s.wav" % filename)
-
-        json = tab.to_json()
-        json("./json/%s.mid" % filename, json)
-
-        play("./%s.mid" % filename)
+        mid.play()
