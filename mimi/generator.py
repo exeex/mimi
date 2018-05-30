@@ -11,8 +11,8 @@ def get_random_note(pitch=None, time=None):
     if pitch is None:
         pitch = random.randint(0, 7)
     if time is None:
-        note_type = random.randint(0, 2)
-        time_list = [1 / 2, 1 / 4, 1 / 8]
+        note_type = random.randint(0, 3)
+        time_list = [1 / 2, 1 / 4, 1 / 8, 1 / 16]
         time = time_list[note_type]
 
     return Note(pitch, time)
@@ -23,8 +23,8 @@ def get_random_chord(pitch=None, time=None):
         pitch = random.randint(0, 7)
 
     if time is None:
-        note_type = random.randint(0, 2)
-        time_list = [1 / 2, 1 / 4, 1 / 8]
+        note_type = random.randint(0, 3)
+        time_list = [1 / 2, 1 / 4, 1 / 8, 1 / 16]
         time = time_list[note_type]
 
     return Chord(Note(pitch, time), Note(pitch + 2, time), Note(pitch + 4, time))
