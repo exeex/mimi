@@ -2,7 +2,11 @@
 a cross-platform python library for midi to wav, generation, visualization, which is design for machine learning  
 一個跨平台的midi撥放器、轉檔器、產生器，並包含一個midi visualizer。 供機器學習使用。
 
+
 features:
+
+![features](https://raw.githubusercontent.com/exeex/mimi/master/document/mimi-road-map.PNG)  
+
 * midi to mp3
 * midi to numpy array
 * midi to json
