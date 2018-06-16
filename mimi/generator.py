@@ -104,7 +104,7 @@ def get_random_tab(key=None, mode=None, octave=None, tempo=None):
 
 if __name__ == "__main__":
     for x in range(1):
-        tab = get_random_tab(tempo=70)
+        tab = get_random_tab(tempo=120)
         filename = "ElectricPiano1"
 
         mid = MidiFile()

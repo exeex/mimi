@@ -3,7 +3,7 @@ import numpy as np
 import os
 import platform
 from mimi.instrument import *
-from mido import Message
+from mido import Message, MetaMessage
 import sys
 
 module_root_path = os.path.split(os.path.abspath(__file__))[0]  # mimi/
@@ -42,6 +42,11 @@ class MidiFile(mido.MidiFile):
 
                 self.instrument = [track.program for track in data.tracks]
                 self.ticks_per_beat = data.beat_resolution
+
+                # assume we follow only 1 bpm in a song
+                bpm = data.tempo[0]
+                self.set_tempo_bpm(bpm)
+
                 # TODO: set tempo by meta message
 
 
@@ -69,8 +74,6 @@ class MidiFile(mido.MidiFile):
             self.instrument[0] = 1
 
             # TODO: set tempo by meta message
-
-
 
     def __add__(self, other):
 
@@ -373,10 +376,23 @@ class MidiFile(mido.MidiFile):
         return mido.tick2second(tick, self.ticks_per_beat, self.get_tempo())
 
     def get_tempo(self):
-        try:
-            return self.meta["set_tempo"]["tempo"]
-        except:
-            return 500000
+        # We just assume there is only 1 set_tempo event
+        for track in self.tracks:
+            for msg in track:
+                if msg.is_meta:
+                    if msg.type == "set_tempo":
+                        return msg.tempo
+
+    def set_tempo(self,tempo = 500000):
+        self.tracks[0].insert(0, MetaMessage('set_tempo',tempo=tempo))
+
+    def get_tempo_bpm(self):
+        return (1000000*60)/self.get_tempo()
+
+
+    def set_tempo_bpm(self,bpm = 100):
+        self.set_tempo(int((1000000*60)/bpm))
+
 
     def get_total_ticks(self):
 
@@ -453,23 +469,28 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import scipy.signal
 
-    #節奏太快纏在一起, 樂器問題? 可能會導致辨識問題
-    #mid = MidiFile("/home/cswu/mimi/lpd_cleansed/I/C/E/TRICEWV128F9344F5B/360594065eeb8886141da58444f4378c.npz")
+    # 節奏太快纏在一起, 樂器問題? 可能會導致辨識問題
+    # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/I/C/E/TRICEWV128F9344F5B/360594065eeb8886141da58444f4378c.npz")
 
-    #channel 太多 出error
+    # channel 太多 出error
     # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/I/C/J/TRICJZW128F9354788/586c0e705100a83a6bb6383d8ea74714.npz")
 
-    #都是鋼琴 只有少量其他樂器
+    # 都是鋼琴 只有少量其他樂器
     # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/M/C/I/TRMCIAX128F92F0D67/daa361f7becf04fb30798dc7e6df6630.npz")
 
-    #都是鋼琴 大量重複和弦
+    # 都是鋼琴 大量重複和弦
     # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/M/T/E/TRMTEFZ128F426962A/807a0b105660918ae88fdb04fc072092.npz")
 
-    #滑音很怪
-    mid = MidiFile("/home/cswu/mimi/lpd_cleansed/M/T/N/TRMTNZK128F4226EF5/2645d5ca4f73bc2e778f2c813a1e1ab5.npz")
-    mid.play()
-    print(mid.instrument)
+    # 滑音很怪
+    # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/M/T/N/TRMTNZK128F4226EF5/2645d5ca4f73bc2e778f2c813a1e1ab5.npz")
 
+
+    mid = MidiFile("/home/cswu/mimi/lpd_cleansed/S/E/K/TRSEKGD128F42B654D/de326b1dde03c2b121e532a16cd99e38.npz")
+    # print(mid.instrument)
+    # mid.set_tempo(700000)
+    # print(mid.get_tempo())
+
+    mid.play()
 
     # mid = MidiFile("test_file/imagine_dragons-believer.mid")
     # plt.axis('equal')
