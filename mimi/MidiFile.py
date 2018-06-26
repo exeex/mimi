@@ -12,6 +12,7 @@ sf2_folder = os.path.join(module_root_path, "soundfont")  # mimi/soundfont/
 default_sf2 = "8MBGMSFX.SF2"  # 8MBGMSFX.SF2
 
 
+# TODO: fix path issue in docker and conda env
 def set_soundfont(dir=None):
     if dir is None:
         with open(cfg_file, 'w') as f:
@@ -28,15 +29,20 @@ class MidiFile(mido.MidiFile):
 
 
     def __init__(self, filename=None):
+
+        self.debug = False
+
+        if not self.debug:
+            # off debug msg
+            self.chan = open(os.devnull, 'w')
+        else:
+            self.chan = sys.stderr
+
+
         if filename is not None:
             ext = os.path.split(filename)[-1].split('.')[-1]
             
-            self.debug = False
-            
-            if not self.debug:
-                # off debug msg
-                f = open(os.devnull, 'w')
-                sys.stderr = f
+
 
             if ext == 'npz':
                 import pypianoroll
@@ -54,7 +60,6 @@ class MidiFile(mido.MidiFile):
                 bpm = data.tempo[0]
                 self.set_tempo_bpm(bpm)
 
-                # TODO: set tempo by meta message
 
 
             elif ext == 'mid':
@@ -71,7 +76,6 @@ class MidiFile(mido.MidiFile):
                 self.instrument = [-1 for _ in range(16)]
                 self.instrument[0] = 1
 
-                # TODO: set tempo by meta message
 
         else:
             mido.MidiFile.__init__(self, filename)
@@ -80,7 +84,6 @@ class MidiFile(mido.MidiFile):
             self.instrument = [-1 for _ in range(16)]
             self.instrument[0] = 1
 
-            # TODO: set tempo by meta message
 
     def __add__(self, other):
 
@@ -89,6 +92,10 @@ class MidiFile(mido.MidiFile):
         ret.tracks.append(other.tracks)
 
         return ret
+
+    def __del__(self):
+        self.chan.close()
+
 
     def get_events(self):
 
@@ -118,7 +125,7 @@ class MidiFile(mido.MidiFile):
                 # if a msg has no channel
                 except AttributeError:
                     if isinstance(msg, mido.MetaMessage):
-                        print(msg, file=sys.stderr)
+                        print(msg, file=self.chan)
                     continue
 
         return events
@@ -176,7 +183,7 @@ class MidiFile(mido.MidiFile):
                            range(len(off_set_indices[0]))]
 
         events = sorted(off_set_indices + on_set_indices, key=lambda x: x[1])
-        print(events, file=sys.stderr)
+        print(events, file=self.chan)
 
         # self.append(Message('note_off', note=object.pitch, velocity=64, time=object.time, channel=self.channel))
 
@@ -184,7 +191,7 @@ class MidiFile(mido.MidiFile):
             time_intervals = [events[0][1]] + [events[i + 1][1] - events[i][1] for i in range(len(events) - 1)]
             # print(time_intervals)
         except IndexError:
-            print(events, file=sys.stderr)
+            print(events, file=self.chan)
             return []
 
         track = []
@@ -214,7 +221,6 @@ class MidiFile(mido.MidiFile):
 
     def get_roll(self, down_sample_rate=10):
 
-        sys.stderr = sys.stderr
 
         events = self.get_events()
         # Identify events, then translate to piano roll
@@ -237,7 +243,7 @@ class MidiFile(mido.MidiFile):
             # Volume would change by control change event (cc) cc7 & cc11
             # Volume 0-100 is mapped to 0-127
 
-            print("channel", idx_channel, "start", file=sys.stderr)
+            print("channel", idx_channel, "start", file=self.chan)
             for msg in channel:
                 if msg.type == "control_change":
                     if msg.control == 7:
@@ -251,11 +257,11 @@ class MidiFile(mido.MidiFile):
                 if msg.type == "program_change":
                     self.instrument[idx_channel] = msg.program
                     print("program_change", " channel:", idx_channel, "pc", msg.program, "time", time_counter,
-                          "duration", msg.time, file=sys.stderr)
+                          "duration", msg.time, file=self.chan)
 
                 if msg.type == "note_on":
                     print("\t note on ", msg.note, "time", time_counter, "duration", msg.time, "velocity", msg.velocity,
-                          file=sys.stderr)
+                          file=self.chan)
                     note_on_start_time = time_counter // sr
                     note_on_end_time = (time_counter + msg.time) // sr
                     intensity = volume * msg.velocity // 100
@@ -274,7 +280,7 @@ class MidiFile(mido.MidiFile):
 
                 if msg.type == "note_off":
                     print("\t note off", msg.note, "time", time_counter, "duration", msg.time, "velocity", msg.velocity,
-                          file=sys.stderr)
+                          file=self.chan)
                     note_off_start_time = time_counter // sr
                     note_off_end_time = (time_counter + msg.time) // sr
                     note_on_end_time = note_register[msg.note][0]
@@ -300,7 +306,7 @@ class MidiFile(mido.MidiFile):
                     roll[idx_channel, key, note_on_end_time:] = intensity
                 note_register[idx_channel] = -1
 
-            print("channel", idx_channel, "end", file=sys.stderr)
+            print("channel", idx_channel, "end", file=self.chan)
 
         return roll
 
@@ -408,6 +414,7 @@ class MidiFile(mido.MidiFile):
         return max_ticks
 
     def save_npz(self, filename):
+        # TODO: pypianoroll format
         array = self.get_roll()
         instrument = np.array(self.get_instrument())
         np.savez(filename, data=array, instrument=instrument)
@@ -477,27 +484,16 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import scipy.signal
 
-    # 節奏太快纏在一起, 樂器問題? 可能會導致辨識問題
-    # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/I/C/E/TRICEWV128F9344F5B/360594065eeb8886141da58444f4378c.npz")
+    mid = MidiFile("./test_file/imagine_dragons-believer.mid")
 
-    # channel 太多 出error
-    # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/I/C/J/TRICJZW128F9354788/586c0e705100a83a6bb6383d8ea74714.npz")
-
-    # 都是鋼琴 只有少量其他樂器
-    # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/M/C/I/TRMCIAX128F92F0D67/daa361f7becf04fb30798dc7e6df6630.npz")
-
-    # 都是鋼琴 大量重複和弦
-    # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/M/T/E/TRMTEFZ128F426962A/807a0b105660918ae88fdb04fc072092.npz")
-
-    # 滑音很怪
-    # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/M/T/N/TRMTNZK128F4226EF5/2645d5ca4f73bc2e778f2c813a1e1ab5.npz")
-
-    mid = MidiFile("/home/cswu/mimi/lpd_cleansed/S/E/K/TRSEKGD128F42B654D/de326b1dde03c2b121e532a16cd99e38.npz")
+    # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/S/E/K/TRSEKGD128F42B654D/de326b1dde03c2b121e532a16cd99e38.npz")
     # print(mid.instrument)
     # mid.set_tempo(700000)
     # print(mid.get_tempo())
 
     mid.play()
+
+    del mid
 
     # mid = MidiFile("test_file/imagine_dragons-believer.mid")
     # plt.axis('equal')
