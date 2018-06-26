@@ -26,10 +26,17 @@ def set_soundfont(dir=None):
 
 class MidiFile(mido.MidiFile):
 
+
     def __init__(self, filename=None):
         if filename is not None:
             ext = os.path.split(filename)[-1].split('.')[-1]
-            print(ext)
+            
+            self.debug = False
+            
+            if not self.debug:
+                # off debug msg
+                f = open(os.devnull, 'w')
+                sys.stderr = f
 
             if ext == 'npz':
                 import pypianoroll
@@ -169,7 +176,7 @@ class MidiFile(mido.MidiFile):
                            range(len(off_set_indices[0]))]
 
         events = sorted(off_set_indices + on_set_indices, key=lambda x: x[1])
-        print(events)
+        print(events, file=sys.stderr)
 
         # self.append(Message('note_off', note=object.pitch, velocity=64, time=object.time, channel=self.channel))
 
@@ -177,7 +184,7 @@ class MidiFile(mido.MidiFile):
             time_intervals = [events[0][1]] + [events[i + 1][1] - events[i][1] for i in range(len(events) - 1)]
             # print(time_intervals)
         except IndexError:
-            print(events)
+            print(events, file=sys.stderr)
             return []
 
         track = []
@@ -205,12 +212,9 @@ class MidiFile(mido.MidiFile):
 
         return track
 
-    def get_roll(self, down_sample_rate=10, debug=False):
+    def get_roll(self, down_sample_rate=10):
 
-        if debug:
-            msg_chan = sys.stdout
-        else:
-            msg_chan = sys.stderr
+        sys.stderr = sys.stderr
 
         events = self.get_events()
         # Identify events, then translate to piano roll
@@ -233,7 +237,7 @@ class MidiFile(mido.MidiFile):
             # Volume would change by control change event (cc) cc7 & cc11
             # Volume 0-100 is mapped to 0-127
 
-            print("channel", idx_channel, "start", file=msg_chan)
+            print("channel", idx_channel, "start", file=sys.stderr)
             for msg in channel:
                 if msg.type == "control_change":
                     if msg.control == 7:
@@ -247,11 +251,11 @@ class MidiFile(mido.MidiFile):
                 if msg.type == "program_change":
                     self.instrument[idx_channel] = msg.program
                     print("program_change", " channel:", idx_channel, "pc", msg.program, "time", time_counter,
-                          "duration", msg.time, file=msg_chan)
+                          "duration", msg.time, file=sys.stderr)
 
                 if msg.type == "note_on":
                     print("\t note on ", msg.note, "time", time_counter, "duration", msg.time, "velocity", msg.velocity,
-                          file=msg_chan)
+                          file=sys.stderr)
                     note_on_start_time = time_counter // sr
                     note_on_end_time = (time_counter + msg.time) // sr
                     intensity = volume * msg.velocity // 100
@@ -270,7 +274,7 @@ class MidiFile(mido.MidiFile):
 
                 if msg.type == "note_off":
                     print("\t note off", msg.note, "time", time_counter, "duration", msg.time, "velocity", msg.velocity,
-                          file=msg_chan)
+                          file=sys.stderr)
                     note_off_start_time = time_counter // sr
                     note_off_end_time = (time_counter + msg.time) // sr
                     note_on_end_time = note_register[msg.note][0]
@@ -296,7 +300,7 @@ class MidiFile(mido.MidiFile):
                     roll[idx_channel, key, note_on_end_time:] = intensity
                 note_register[idx_channel] = -1
 
-            print("channel", idx_channel, "end", file=msg_chan)
+            print("channel", idx_channel, "end", file=sys.stderr)
 
         return roll
 
@@ -382,17 +386,16 @@ class MidiFile(mido.MidiFile):
                 if msg.is_meta:
                     if msg.type == "set_tempo":
                         return msg.tempo
+        return 500000
 
-    def set_tempo(self,tempo = 500000):
-        self.tracks[0].insert(0, MetaMessage('set_tempo',tempo=tempo))
+    def set_tempo(self, tempo=500000):
+        self.tracks[0].insert(0, MetaMessage('set_tempo', tempo=tempo))
 
     def get_tempo_bpm(self):
-        return (1000000*60)/self.get_tempo()
+        return (1000000 * 60) / self.get_tempo()
 
-
-    def set_tempo_bpm(self,bpm = 100):
-        self.set_tempo(int((1000000*60)/bpm))
-
+    def set_tempo_bpm(self, bpm=100):
+        self.set_tempo(int((1000000 * 60) / bpm))
 
     def get_total_ticks(self):
 
@@ -404,10 +407,15 @@ class MidiFile(mido.MidiFile):
                 max_ticks = ticks
         return max_ticks
 
-    def save_npz(self, filename=None):
+    def save_npz(self, filename):
         array = self.get_roll()
         instrument = np.array(self.get_instrument())
         np.savez(filename, data=array, instrument=instrument)
+
+    def get_npz(self):
+        array = self.get_roll()
+        instrument = np.array(self.get_instrument())
+        return {'data': array, 'instrument': instrument}
 
     def save_png(self, filename=""):
         try:
@@ -483,7 +491,6 @@ if __name__ == "__main__":
 
     # 滑音很怪
     # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/M/T/N/TRMTNZK128F4226EF5/2645d5ca4f73bc2e778f2c813a1e1ab5.npz")
-
 
     mid = MidiFile("/home/cswu/mimi/lpd_cleansed/S/E/K/TRSEKGD128F42B654D/de326b1dde03c2b121e532a16cd99e38.npz")
     # print(mid.instrument)
