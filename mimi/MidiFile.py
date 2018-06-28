@@ -6,6 +6,10 @@ from mimi.instrument import *
 from mido import Message, MetaMessage
 import sys
 
+
+DEFAULT_TEMPO = 500000
+DEFAULT_TICKS_PER_BEAT = 480
+
 module_root_path = os.path.split(os.path.abspath(__file__))[0]  # mimi/
 cfg_file = os.path.join(module_root_path, "soundfont", "soundfont.cfg")  # mimi/soundfont/soundfont.cfg
 sf2_folder = os.path.join(module_root_path, "soundfont")  # mimi/soundfont/
@@ -368,13 +372,13 @@ class MidiFile(mido.MidiFile):
                 pass
 
         # draw color bar
-        if color_bar:
-            colors = [mpl.colors.hsv_to_rgb((i / channel_nb, 1, 1)) for i in range(channel_nb)]
-            cmap = mpl.colors.LinearSegmentedColormap.from_list('my_cmap', colors, 16)
-            a2 = fig.add_axes([0.05, 0.80, 0.9, 0.15])
-            cbar = mpl.colorbar.ColorbarBase(a2, cmap=cmap,
-                                             orientation='horizontal',
-                                             ticks=list(range(16)))
+        # if color_bar:
+        #     colors = [mpl.colors.hsv_to_rgb((i / channel_nb, 1, 1)) for i in range(channel_nb)]
+        #     cmap = mpl.colors.LinearSegmentedColormap.from_list('my_cmap', colors, 16)
+        #     a2 = fig.add_axes([0.05, 0.80, 0.9, 0.15])
+        #     cbar = mpl.colorbar.ColorbarBase(a2, cmap=cmap,
+        #                                      orientation='horizontal',
+        #                                      ticks=list(range(16)))
 
         # show piano roll
         plt.draw()
@@ -392,9 +396,9 @@ class MidiFile(mido.MidiFile):
                 if msg.is_meta:
                     if msg.type == "set_tempo":
                         return msg.tempo
-        return 500000
+        return DEFAULT_TEMPO
 
-    def set_tempo(self, tempo=500000):
+    def set_tempo(self, tempo=DEFAULT_TEMPO):
         self.tracks[0].insert(0, MetaMessage('set_tempo', tempo=tempo))
 
     def get_tempo_bpm(self):
@@ -402,6 +406,29 @@ class MidiFile(mido.MidiFile):
 
     def set_tempo_bpm(self, bpm=100):
         self.set_tempo(int((1000000 * 60) / bpm))
+
+
+    def get_tick_per_beat(self):
+        return self.ticks_per_beat
+
+    def set_tick_per_beat(self, ticks_per_beat, resample = True):
+
+
+        if resample:
+
+            resample_ratio = ticks_per_beat/self.ticks_per_beat
+            print(resample_ratio)
+
+            for idx, track in enumerate(self.tracks):
+                for msg in track:
+                    try:
+                        msg.time = round(msg.time * resample_ratio)
+                    except AttributeError as e:
+                        print(e)
+
+
+
+        self.ticks_per_beat = ticks_per_beat
 
     def get_total_ticks(self):
 
@@ -412,6 +439,7 @@ class MidiFile(mido.MidiFile):
             if ticks > max_ticks:
                 max_ticks = ticks
         return max_ticks
+
 
     def save_npz(self, filename):
         # TODO: pypianoroll format
@@ -491,9 +519,11 @@ if __name__ == "__main__":
     # mid.set_tempo(700000)
     # print(mid.get_tempo())
 
+    print(mid.ticks_per_beat, mid.get_seconds())
+    mid.set_tick_per_beat(1000)
+    print(mid.ticks_per_beat, mid.get_seconds())
     mid.play()
 
-    del mid
 
     # mid = MidiFile("test_file/imagine_dragons-believer.mid")
     # plt.axis('equal')
