@@ -15,7 +15,7 @@ cfg_file = os.path.join(module_root_path, "soundfont", "soundfont.cfg")  # mimi/
 sf2_folder = os.path.join(module_root_path, "soundfont")  # mimi/soundfont/
 default_sf2 = "8MBGMSFX.SF2"  # 8MBGMSFX.SF2
 
-
+# TODO: set instrument
 # TODO: fix path issue in docker and conda env
 def set_soundfont(dir=None):
     if dir is None:
@@ -76,9 +76,8 @@ class MidiFile(mido.MidiFile):
                 for idx, track in enumerate(self.tracks):
                     # remove mido.UnknownMetaMessage in track (which would cause error)
                     self.tracks[idx] = [msg for msg in track if not isinstance(msg, mido.UnknownMetaMessage)]
-
                 self.instrument = [-1 for _ in range(16)]
-                self.instrument[0] = 1
+                self.get_instrument()
 
 
         else:
@@ -86,7 +85,7 @@ class MidiFile(mido.MidiFile):
 
             self.meta = {}
             self.instrument = [-1 for _ in range(16)]
-            self.instrument[0] = 1
+            self.instrument[0] = 0
 
 
     def __add__(self, other):
@@ -140,12 +139,17 @@ class MidiFile(mido.MidiFile):
 
         # Now we just assume there is only 1 program change in each channel
 
-        for idx_channel, channel in enumerate(events):
+        for idx, channel in enumerate(events):
             for msg in channel:
                 if msg.type == "program_change":
-                    self.instrument[idx_channel] = msg.program
+                    self.instrument[idx] = msg.program
                     # print("program_change", " channel:", idx_channel, "pc")
         return self.instrument
+
+
+
+
+
 
     def get_events_from_roll(self, roll: np.ndarray):
         """
@@ -258,6 +262,7 @@ class MidiFile(mido.MidiFile):
                         # change volume by percentage
                         # print("cc", msg.control, msg.value, "duration", msg.time)
 
+                # TODO: set instrument
                 if msg.type == "program_change":
                     self.instrument[idx_channel] = msg.program
                     print("program_change", " channel:", idx_channel, "pc", msg.program, "time", time_counter,
@@ -490,6 +495,7 @@ class MidiFile(mido.MidiFile):
 
     def play(self, filename="tmp"):
 
+
         tmp_file = "%s_tmp.mid" % filename
         self.save(tmp_file)
 
@@ -519,10 +525,10 @@ if __name__ == "__main__":
     # mid.set_tempo(700000)
     # print(mid.get_tempo())
 
-    print(mid.ticks_per_beat, mid.get_seconds())
-    mid.set_tick_per_beat(1000)
-    print(mid.ticks_per_beat, mid.get_seconds())
-    mid.play()
+    # print(mid.ticks_per_beat, mid.get_seconds())
+    # mid.set_tick_per_beat(1000)
+    # print(mid.ticks_per_beat, mid.get_seconds())
+    # mid.play()
 
 
     # mid = MidiFile("test_file/imagine_dragons-believer.mid")

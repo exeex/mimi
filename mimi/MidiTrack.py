@@ -41,6 +41,10 @@ class MidiTrack(mido.MidiTrack):
             for bar in object.bars:
                 self.__append_bar(bar)
 
+        # dirty midi msg list
+        elif type(object) is list:
+            self.__append_list(object)
+
     def __append_bar(self, bar: Bar):
         for note in bar.notes:
 
@@ -75,3 +79,89 @@ class MidiTrack(mido.MidiTrack):
             # TODO: Program change ---> done, ready to be tested
 
         return
+
+    def __check_channel_consistent(self, l):
+
+        channel = None
+
+        for idx, msg in enumerate(l):
+
+            if channel is None:
+                try:
+                    channel = msg.channel
+                    # time = msg.time
+                    # mtype = msg.type
+                    # print(mtype, channel, time)
+                except AttributeError:
+                    print(msg.type)
+            else:
+                try:
+                    _channel = msg.channel
+                    # time = msg.time
+                    # type = msg.type
+                    # print(type, channel, time)
+
+                    if channel != _channel:
+                        raise ValueError("the track is invalid, channel didn't consistent in track. msg idx = %d: %s"
+                                         % (idx,msg))
+
+                except AttributeError:
+                    print(msg.type)
+        return True
+
+    def set_instrument(self, ins_nb):
+        self.instrument = ins_nb
+        pc_event = self.__getitem__(0)
+        pc_event.program = ins_nb
+
+
+
+    def __append_list(self, l):
+
+
+        if self.__check_channel_consistent(l):
+            for idx, msg in enumerate(l):
+
+                if msg.type == "note_on":
+                    msg = msg.copy()
+                    msg.channel = self.channel
+                    self.append(msg)
+                elif msg.type == "note_off":
+                    msg = msg.copy()
+                    msg.channel = self.channel
+                    self.append(msg)
+                elif msg.type == "end_of_track":
+                    msg = msg.copy()
+                    self.append(msg)
+                elif msg.type == "program_change":
+                    # !!!!would overwrite original instrument
+                    # TODO: find a better implementation
+                    self.set_instrument(msg.program)
+                    time = msg.time
+                    # Place holder event
+                    self.append(Message('control_change', control=15, value=0, time=time))
+                else:
+                    try:
+                        time = msg.time
+                        # print(time)
+                        # Place holder event
+                        self.append(Message('control_change', control=15, value=0, time=time))
+                    except AttributeError as e:
+                        print(e)
+
+                # if msg.type == "program_change":
+                #     self.instrument = msg.program
+                #     print("hahaa",idx, msg.program)
+                #     msg.program = 10
+
+
+if __name__ == "__main__":
+    import MidiFile as gg
+
+    t = MidiTrack()
+    mid = gg.MidiFile("./test_file/imagine_dragons-believer.mid")
+    t.append(mid.tracks[5])
+    t.set_instrument(44)
+    mid2 = gg.MidiFile()
+    mid2.tracks.append(t)
+    mid2.play()
