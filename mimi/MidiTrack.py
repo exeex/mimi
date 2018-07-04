@@ -14,7 +14,7 @@ class MidiTrack(mido.MidiTrack):
         self.channel = channel
         self.append(Message('program_change', program=instrument, time=0, channel=self.channel))
 
-    def append(self, object: Union[AbsNote, Message, Bar, Tab]):
+    def append(self, object: Union[AbsNote, Message, Bar, Tab, list], overwrite_instrument=False):
         """
         append music element to the track
         input type could be:
@@ -43,7 +43,7 @@ class MidiTrack(mido.MidiTrack):
 
         # dirty midi msg list
         elif type(object) is list:
-            self.__append_list(object)
+            self.__append_list(object, overwrite_instrument=overwrite_instrument)
 
     def __append_bar(self, bar: Bar):
         for note in bar.notes:
@@ -116,7 +116,7 @@ class MidiTrack(mido.MidiTrack):
 
 
 
-    def __append_list(self, l):
+    def __append_list(self, l, overwrite_instrument=False):
 
 
         if self.__check_channel_consistent(l):
@@ -134,9 +134,8 @@ class MidiTrack(mido.MidiTrack):
                     msg = msg.copy()
                     self.append(msg)
                 elif msg.type == "program_change":
-                    # !!!!would overwrite original instrument
-                    # TODO: find a better implementation
-                    self.set_instrument(msg.program)
+                    if overwrite_instrument:
+                        self.set_instrument(msg.program)
                     time = msg.time
                     # Place holder event
                     self.append(Message('control_change', control=15, value=0, time=time))
@@ -149,19 +148,19 @@ class MidiTrack(mido.MidiTrack):
                     except AttributeError as e:
                         print(e)
 
-                # if msg.type == "program_change":
-                #     self.instrument = msg.program
-                #     print("hahaa",idx, msg.program)
-                #     msg.program = 10
+                # TODO: merge place holder events
+
+
+
 
 
 if __name__ == "__main__":
     import MidiFile as gg
 
-    t = MidiTrack()
+    t = MidiTrack(instrument=44)
     mid = gg.MidiFile("./test_file/imagine_dragons-believer.mid")
     t.append(mid.tracks[5])
-    t.set_instrument(44)
+    t.set_instrument(56)
     mid2 = gg.MidiFile()
     mid2.tracks.append(t)
     mid2.play()

@@ -4,8 +4,8 @@ import os
 import platform
 from mimi.instrument import *
 from mido import Message, MetaMessage
+from mimi.MidiTrack import MidiTrack
 import sys
-
 
 DEFAULT_TEMPO = 500000
 DEFAULT_TICKS_PER_BEAT = 480
@@ -14,6 +14,7 @@ module_root_path = os.path.split(os.path.abspath(__file__))[0]  # mimi/
 cfg_file = os.path.join(module_root_path, "soundfont", "soundfont.cfg")  # mimi/soundfont/soundfont.cfg
 sf2_folder = os.path.join(module_root_path, "soundfont")  # mimi/soundfont/
 default_sf2 = "8MBGMSFX.SF2"  # 8MBGMSFX.SF2
+
 
 # TODO: set instrument
 # TODO: fix path issue in docker and conda env
@@ -31,7 +32,6 @@ def set_soundfont(dir=None):
 
 class MidiFile(mido.MidiFile):
 
-
     def __init__(self, filename=None):
 
         self.debug = False
@@ -42,11 +42,8 @@ class MidiFile(mido.MidiFile):
         else:
             self.chan = sys.stderr
 
-
         if filename is not None:
             ext = os.path.split(filename)[-1].split('.')[-1]
-            
-
 
             if ext == 'npz':
                 import pypianoroll
@@ -87,7 +84,6 @@ class MidiFile(mido.MidiFile):
             self.instrument = [-1 for _ in range(16)]
             self.instrument[0] = 0
 
-
     def __add__(self, other):
 
         ret = MidiFile()
@@ -98,7 +94,6 @@ class MidiFile(mido.MidiFile):
 
     def __del__(self):
         self.chan.close()
-
 
     def get_events(self):
 
@@ -145,11 +140,6 @@ class MidiFile(mido.MidiFile):
                     self.instrument[idx] = msg.program
                     # print("program_change", " channel:", idx_channel, "pc")
         return self.instrument
-
-
-
-
-
 
     def get_events_from_roll(self, roll: np.ndarray):
         """
@@ -228,7 +218,6 @@ class MidiFile(mido.MidiFile):
         return track
 
     def get_roll(self, down_sample_rate=10):
-
 
         events = self.get_events()
         # Identify events, then translate to piano roll
@@ -412,16 +401,14 @@ class MidiFile(mido.MidiFile):
     def set_tempo_bpm(self, bpm=100):
         self.set_tempo(int((1000000 * 60) / bpm))
 
-
     def get_tick_per_beat(self):
         return self.ticks_per_beat
 
-    def set_tick_per_beat(self, ticks_per_beat, resample = True):
-
+    def set_tick_per_beat(self, ticks_per_beat, resample=True):
 
         if resample:
 
-            resample_ratio = ticks_per_beat/self.ticks_per_beat
+            resample_ratio = ticks_per_beat / self.ticks_per_beat
             print(resample_ratio)
 
             for idx, track in enumerate(self.tracks):
@@ -430,8 +417,6 @@ class MidiFile(mido.MidiFile):
                         msg.time = round(msg.time * resample_ratio)
                     except AttributeError as e:
                         print(e)
-
-
 
         self.ticks_per_beat = ticks_per_beat
 
@@ -444,7 +429,6 @@ class MidiFile(mido.MidiFile):
             if ticks > max_ticks:
                 max_ticks = ticks
         return max_ticks
-
 
     def save_npz(self, filename):
         # TODO: pypianoroll format
@@ -495,7 +479,6 @@ class MidiFile(mido.MidiFile):
 
     def play(self, filename="tmp"):
 
-
         tmp_file = "%s_tmp.mid" % filename
         self.save(tmp_file)
 
@@ -512,13 +495,36 @@ class MidiFile(mido.MidiFile):
         # TODO: save tmp_file in tmp_folder
 
 
+class SingleTrackMidiFile(MidiFile):
+
+    # strict Midi
+
+    def __init__(self, filename=None, instrument=None):
+        MidiFile.__init__(self, filename=filename)
+
+        if not instrument:
+            instrument = 0
+        track = MidiTrack(0)
+        track.append(self.tracks[0])
+        track.set_instrument(instrument)
+        self.tracks = [track]
+
+    def get_instrument(self):
+        return MidiFile.get_instrument(self)[0:1]
+
+    def set_instrument(self, instrument):
+        self.tracks[0].set_instrument(instrument)
+
+
 set_soundfont()
 
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import scipy.signal
 
-    mid = MidiFile("./test_file/imagine_dragons-believer.mid")
+    # mid = MidiFile("./test_file/imagine_dragons-believer.mid")
+    mid = SingleTrackMidiFile("test_file/test.mid", instrument=0)
+    mid.set_instrument(10)
 
     # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/S/E/K/TRSEKGD128F42B654D/de326b1dde03c2b121e532a16cd99e38.npz")
     # print(mid.instrument)
@@ -529,7 +535,6 @@ if __name__ == "__main__":
     # mid.set_tick_per_beat(1000)
     # print(mid.ticks_per_beat, mid.get_seconds())
     # mid.play()
-
 
     # mid = MidiFile("test_file/imagine_dragons-believer.mid")
     # plt.axis('equal')
