@@ -379,6 +379,25 @@ class MidiFile(mido.MidiFile):
         plt.ion()
         plt.show(block=True)
 
+    def clip(self, start_time, end_time):
+        # TODO: test this function
+        # TODO: boundary would fail, need place holder, or clip in dense form
+        time = []
+        for i in range(len(self.tracks)):
+            track = self.tracks[i]
+            for msg in track:
+                try:
+                    t = msg.time
+                    time.append(t)
+                except AttributeError:
+                    pass
+
+            time = [sum(time[:x]) for x in range(len(time))]
+
+            self.tracks[i] = [track[i] for i, t in enumerate(time) if start_time < t < end_time]
+
+
+
     def get_seconds(self):
         tick = self.get_total_ticks()
         return mido.tick2second(tick, self.ticks_per_beat, self.get_tempo())
@@ -524,7 +543,10 @@ if __name__ == "__main__":
 
     # mid = MidiFile("./test_file/imagine_dragons-believer.mid")
     mid = SingleTrackMidiFile("test_file/test.mid", instrument=0)
-    mid.set_instrument(10)
+    print(mid.get_seconds())
+    mid.clip(0000,1500)
+    print(mid.get_seconds())
+    # mid.set_instrument(10)
 
     # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/S/E/K/TRSEKGD128F42B654D/de326b1dde03c2b121e532a16cd99e38.npz")
     # print(mid.instrument)
