@@ -279,9 +279,13 @@ class MidiFile(mido.MidiFile):
                 if msg.type == "note_off":
                     print("\t note off", msg.note, "time", time_counter, "duration", msg.time, "velocity", msg.velocity,
                           file=self.chan)
+
                     note_off_start_time = time_counter // sr
                     note_off_end_time = (time_counter + msg.time) // sr
-                    note_on_end_time = note_register[msg.note][0]
+                    try:
+                        note_on_end_time = note_register[msg.note][0]
+                    except TypeError:
+                        continue
                     intensity = note_register[msg.note][1]
                     # fill in color
                     roll[idx_channel, msg.note, note_on_end_time:note_off_end_time] = intensity
@@ -379,22 +383,27 @@ class MidiFile(mido.MidiFile):
         plt.ion()
         plt.show(block=True)
 
-    def clip(self, start_time, end_time):
+    def _clip(self, start_time, end_time):
         # TODO: test this function
         # TODO: boundary would fail, need place holder, or clip in dense form
-        time = []
-        for i in range(len(self.tracks)):
-            track = self.tracks[i]
-            for msg in track:
-                try:
-                    t = msg.time
-                    time.append(t)
-                except AttributeError:
-                    pass
+        # time = []
+        # for i in range(len(self.tracks)):
+        #     track = self.tracks[i]
+        #     for msg in track:
+        #         try:
+        #             t = msg.time
+        #             time.append(t)
+        #         except AttributeError:
+        #             pass
+        #
+        #     time = [sum(time[:x]) for x in range(len(time))]
+        #
+        #     self.tracks[i] = [track[i] for i, t in enumerate(time) if start_time < t < end_time]
 
-            time = [sum(time[:x]) for x in range(len(time))]
 
-            self.tracks[i] = [track[i] for i, t in enumerate(time) if start_time < t < end_time]
+        npy = self.get_roll()
+        npy = npy[:,:,start_time:end_time]
+        self.tracks = self.get_events_from_roll(npy)
 
 
 
@@ -542,9 +551,8 @@ if __name__ == "__main__":
     import scipy.signal
 
     # mid = MidiFile("./test_file/imagine_dragons-believer.mid")
-    mid = SingleTrackMidiFile("test_file/test.mid", instrument=0)
-    print(mid.get_seconds())
-    mid.clip(0000,1500)
+    mid = MidiFile("test_file/imagine_dragons-believer.mid")
+    # mid._clip(0000,3000)
     print(mid.get_seconds())
     # mid.set_instrument(10)
 
