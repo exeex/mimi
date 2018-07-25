@@ -82,7 +82,6 @@ class MidiFile(mido.MidiFile):
 
             self.meta = {}
             self.instrument = [-1 for _ in range(16)]
-            self.instrument[0] = 0
 
     def __add__(self, other):
 
@@ -160,6 +159,7 @@ class MidiFile(mido.MidiFile):
             if self.instrument[i] != -1:
                 track_ = self._get_events_from_roll(roll[i, :, :], i)
                 track = MidiTrack(instrument=self.instrument[i])
+                # TODO: fix instrument program change in new track
                 track.append(track_)
                 tracks.append(track)
 
@@ -173,8 +173,9 @@ class MidiFile(mido.MidiFile):
         :return: track, a midi events list (list of Mido.Message)
         """
 
+
         chan = (raw_chan > 0) * 1  # binarization
-        chan = np.pad(chan, [[0, 0], [1, 0]], mode='constant', constant_values=[0, 0])  # pad zero left
+        chan = np.pad(chan, [[0, 0], [1, 1]], mode='constant', constant_values=[0, 0])  # pad zero left and right
 
         diff = np.diff(chan, axis=1)
         on_set = diff > 0
@@ -192,6 +193,8 @@ class MidiFile(mido.MidiFile):
 
         # self.append(Message('note_off', note=object.pitch, velocity=64, time=object.time, channel=self.channel))
 
+        # TODO : fix missing message in the end of track
+        # Bug would be here:
         try:
             time_intervals = [events[0][1]] + [events[i + 1][1] - events[i][1] for i in range(len(events) - 1)]
             # print(time_intervals)
@@ -204,10 +207,12 @@ class MidiFile(mido.MidiFile):
 
             note = event[0]
             time = event[1]
-            velocity = raw_chan[note, time]
+
+
             if event[2] == 'on':
                 # print(chan[note, time_intervals])
-                track.append(Message('note_on', note=note, velocity=64,
+                velocity = raw_chan[note, time]
+                track.append(Message('note_on', note=note, velocity=velocity,
                                      time=time_intervals[idx], channel=chan_idx))
 
                 # print("on", note, velocity)
@@ -417,7 +422,6 @@ class MidiFile(mido.MidiFile):
         self.tracks = self.get_events_from_roll(npy)
 
     def key_shift(self, shift):
-
         npy = self.get_roll(down_sample_rate=1)
         npy = np.roll(npy, shift, axis=1)
         self.tracks = self.get_events_from_roll(npy)
