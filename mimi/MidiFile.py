@@ -141,6 +141,7 @@ class MidiFile(mido.MidiFile):
                     # print("program_change", " channel:", idx_channel, "pc")
         return self.instrument
 
+
     def get_events_from_roll(self, roll: np.ndarray):
         """
         :param roll: np.ndarray of piano roll in shape (channel, pitch, time)
@@ -154,7 +155,13 @@ class MidiFile(mido.MidiFile):
         if pitch != 128:
             raise IndexError("pitch number is not 128")
 
-        tracks = [self._get_events_from_roll(roll[i, :, :], i) for i in range(chan)]
+        tracks = []
+        for i in range(chan):
+            if self.instrument[i] != -1:
+                track_ = self._get_events_from_roll(roll[i, :, :], i)
+                track = MidiTrack(instrument=self.instrument[i])
+                track.append(track_)
+                tracks.append(track)
 
         return tracks
 
