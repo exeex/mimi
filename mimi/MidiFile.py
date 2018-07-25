@@ -409,6 +409,15 @@ class MidiFile(mido.MidiFile):
         npy = npy[:, :, start_time:end_time]
         self.tracks = self.get_events_from_roll(npy)
 
+    def key_shift(self, shift):
+
+        npy = self.get_roll(down_sample_rate=1)
+        npy = np.roll(npy, shift, axis=1)
+        self.tracks = self.get_events_from_roll(npy)
+
+
+
+
     def get_seconds(self):
         tick = self.get_total_ticks()
         return mido.tick2second(tick, self.ticks_per_beat, self.get_tempo())
@@ -439,7 +448,7 @@ class MidiFile(mido.MidiFile):
         if resample:
 
             resample_ratio = ticks_per_beat / self.ticks_per_beat
-            print(resample_ratio)
+            # print(resample_ratio)
 
             for idx, track in enumerate(self.tracks):
                 for msg in track:
@@ -553,9 +562,11 @@ if __name__ == "__main__":
     import scipy.signal
 
     # mid = MidiFile("./test_file/imagine_dragons-believer.mid")
-    mid = MidiFile("test_file/imagine_dragons-believer.mid")
-    mid.clip(0000,40)
-    print(mid.get_seconds())
+    mid = MidiFile("test_file/1.mid")
+    mid.key_shift(-10)
+    mid.play()
+    # mid.clip(0000,40)
+    # print(mid.get_seconds())
     # mid.set_instrument(10)
 
     # mid = MidiFile("/home/cswu/mimi/lpd_cleansed/S/E/K/TRSEKGD128F42B654D/de326b1dde03c2b121e532a16cd99e38.npz")
