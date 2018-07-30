@@ -18,6 +18,7 @@ default_sf2 = "8MBGMSFX.SF2"  # 8MBGMSFX.SF2
 
 # TODO: set instrument
 # TODO: fix path issue in docker and conda env
+
 def set_soundfont(dir=None):
     if dir is None:
         with open(cfg_file, 'w') as f:
@@ -31,7 +32,6 @@ def set_soundfont(dir=None):
 
 
 class MidiFile(mido.MidiFile):
-
     def __init__(self, filename=None):
 
         self.debug = False
@@ -82,7 +82,6 @@ class MidiFile(mido.MidiFile):
 
             self.meta = {}
             self.instrument = [-1 for _ in range(16)]
-            self.instrument[0] = 0
 
     def __add__(self, other):
 
@@ -141,7 +140,6 @@ class MidiFile(mido.MidiFile):
                     # print("program_change", " channel:", idx_channel, "pc")
         return self.instrument
 
-
     def get_events_from_roll(self, roll: np.ndarray):
         """
         :param roll: np.ndarray of piano roll in shape (channel, pitch, time)
@@ -159,7 +157,7 @@ class MidiFile(mido.MidiFile):
         for i in range(chan):
             if self.instrument[i] != -1:
                 track_ = self._get_events_from_roll(roll[i, :, :], i)
-                track = MidiTrack(instrument=self.instrument[i])
+                track = MidiTrack(instrument=self.instrument[i], channel=i)
                 track.append(track_)
                 tracks.append(track)
 
@@ -172,6 +170,9 @@ class MidiFile(mido.MidiFile):
         :param chan_idx: set output to certain channel idx
         :return: track, a midi events list (list of Mido.Message)
         """
+        # import matplotlib.pyplot as plt
+        # plt.imshow(raw_chan)
+        # plt.show()
 
         chan = (raw_chan > 0) * 1  # binarization
         chan = np.pad(chan, [[0, 0], [1, 0]], mode='constant', constant_values=[0, 0])  # pad zero left
@@ -192,12 +193,12 @@ class MidiFile(mido.MidiFile):
 
         # self.append(Message('note_off', note=object.pitch, velocity=64, time=object.time, channel=self.channel))
 
-        try:
-            time_intervals = [events[0][1]] + [events[i + 1][1] - events[i][1] for i in range(len(events) - 1)]
+        # try:
+        time_intervals = [events[0][1]] + [events[i + 1][1] - events[i][1] for i in range(len(events) - 1)]
             # print(time_intervals)
-        except IndexError:
-            print(events, file=self.chan)
-            return []
+        # except IndexError:
+        #     print(events, file=self.chan)
+        #     return []
 
         track = []
         for idx, event in enumerate(events):
@@ -420,10 +421,8 @@ class MidiFile(mido.MidiFile):
 
         npy = self.get_roll(down_sample_rate=1)
         npy = np.roll(npy, shift, axis=1)
+
         self.tracks = self.get_events_from_roll(npy)
-
-
-
 
     def get_seconds(self):
         tick = self.get_total_ticks()
@@ -542,7 +541,6 @@ class MidiFile(mido.MidiFile):
 
 
 class SingleTrackMidiFile(MidiFile):
-
     # strict Midi
 
     def __init__(self, filename=None, instrument=None):
@@ -567,11 +565,50 @@ set_soundfont()
 if __name__ == "__main__":
     import matplotlib.pyplot as plt
     import scipy.signal
+    from mimi import generator
 
     # mid = MidiFile("./test_file/imagine_dragons-believer.mid")
-    mid = MidiFile("test_file/1.mid")
-    mid.key_shift(-10)
-    mid.play()
+    for x in range(1):
+
+        tracks = [MidiTrack(channel=0, instrument=Piano.AcousticGrandPiano),
+                  MidiTrack(channel=1, instrument=Guitar.ElectricGuitar_jazz),
+                  MidiTrack(channel=2, instrument=Strings.Cello),
+                  MidiTrack(channel=3, instrument=Brass.Trumpet),
+                  MidiTrack(channel=4, instrument=Organ.ChurchOrgan),
+                  MidiTrack(channel=5, instrument=Guitar.AcousticGuitar_steel),
+                  MidiTrack(channel=6, instrument=SynthLead.Lead2_sawtooth),
+                  MidiTrack(channel=7, instrument=Guitar.OverdrivenGuitar)]
+
+        tracks_ = [tracks[i] for i in [1, 2, 3]]
+
+        for track in tracks_:
+            track.append(generator.get_random_tab(tempo=70))
+
+        combo = ["123"]
+
+        mid_ = MidiFile()
+        mid_.tracks.extend(tracks_)
+        mid_.set_tick_per_beat(50)
+
+        for indices in combo:
+            mid = MidiFile()
+            mid.set_tick_per_beat(50)
+
+            for index in indices:
+                mid.tracks.append(tracks_[int(index) - 1])
+            # TODO : fix 1+2+3 bug
+            # TODO : resample bug
+            # TODO : only piano bug
+
+            event_nb = []
+            for key_shift in range(3):
+                mid.key_shift(1)
+                print(len(mid.tracks[0]))
+
+
+
+
+    # mid.play()
     # mid.clip(0000,40)
     # print(mid.get_seconds())
     # mid.set_instrument(10)
