@@ -196,12 +196,12 @@ class MidiFile(mido.MidiFile):
 
         # TODO : fix missing message in the end of track
         # Bug would be here:
-
-        time_intervals = [events[0][1]] + [events[i + 1][1] - events[i][1] for i in range(len(events) - 1)]
-            # print(time_intervals)
-        # except IndexError:
-        #     print(events, file=self.chan)
-        #     return []
+        try:
+            time_intervals = [events[0][1]] + [events[i + 1][1] - events[i][1] for i in range(len(events) - 1)]
+                # print(time_intervals)
+        except IndexError:
+            print(events)
+            return []
 
         track = []
         for idx, event in enumerate(events):
@@ -241,7 +241,7 @@ class MidiFile(mido.MidiFile):
         length = self.get_total_ticks()
 
         # allocate memory to numpy array
-        roll = np.zeros((16, 128, length // sr), dtype="int8")
+        roll = np.zeros((16, 128, length // sr), dtype="uint8")
 
         # use a register array to save the state(no/off) for each key
         note_register = [int(-1) for _ in range(128)]
@@ -249,7 +249,7 @@ class MidiFile(mido.MidiFile):
         for idx_channel, channel in enumerate(events):
 
             time_counter = 0
-            volume = 100
+            volume = 127
             # Volume would change by control change event (cc) cc7 & cc11
             # Volume 0-100 is mapped to 0-127
 
@@ -259,10 +259,11 @@ class MidiFile(mido.MidiFile):
                     if msg.control == 7:
                         volume = msg.value
                         # directly assign volume
-                    if msg.control == 11:
-                        volume = volume * msg.value // 100
-                        # change volume by percentage
-                        # print("cc", msg.control, msg.value, "duration", msg.time)
+                    # if msg.control == 11:
+                    #     volume = volume * msg.value // 100
+                    #     # change volume by percentage
+                    #     # print("cc", msg.control, msg.value, "duration", msg.time)
+
 
                 # TODO: set instrument
                 if msg.type == "program_change":
@@ -275,7 +276,9 @@ class MidiFile(mido.MidiFile):
                           file=self.chan)
                     note_on_start_time = time_counter // sr
                     note_on_end_time = (time_counter + msg.time) // sr
-                    intensity = volume * msg.velocity // 100
+                    intensity = volume * msg.velocity // 127
+
+
 
                     # When a note_on event *ends* the note start to be play
                     # Record end time of note_on event if there is no value in register
@@ -289,6 +292,8 @@ class MidiFile(mido.MidiFile):
                         roll[idx_channel, msg.note, old_end_time: note_on_end_time] = old_intensity
                         note_register[msg.note] = (note_on_end_time, intensity)
 
+
+
                 if msg.type == "note_off":
                     print("\t note off", msg.note, "time", time_counter, "duration", msg.time, "velocity", msg.velocity,
                           file=self.chan)
@@ -301,7 +306,12 @@ class MidiFile(mido.MidiFile):
                         continue
                     intensity = note_register[msg.note][1]
                     # fill in color
+                    if intensity < 0 :
+                        raise ValueError
+
                     roll[idx_channel, msg.note, note_on_end_time:note_off_end_time] = intensity
+
+
 
                     note_register[msg.note] = -1  # reinitialize register
 
@@ -423,7 +433,6 @@ class MidiFile(mido.MidiFile):
         self.tracks = self.get_events_from_roll(npy)
 
     def key_shift(self, shift):
-        self.draw_roll()
         npy = self.get_roll(down_sample_rate=1)
         npy = np.roll(npy, shift, axis=1)
         self.tracks = self.get_events_from_roll(npy)
