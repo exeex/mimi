@@ -418,7 +418,7 @@ class MidiFile(mido.MidiFile):
         self.tracks = self.get_events_from_roll(npy)
 
     def key_shift(self, shift):
-
+        self.draw_roll()
         npy = self.get_roll(down_sample_rate=1)
         npy = np.roll(npy, shift, axis=1)
 
@@ -601,7 +601,7 @@ if __name__ == "__main__":
             # TODO : only piano bug
 
             event_nb = []
-            for key_shift in range(3):
+            for key_shift in range(5):
                 mid.key_shift(1)
                 print(len(mid.tracks[0]))
 
