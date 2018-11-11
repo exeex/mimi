@@ -3,6 +3,7 @@ import numpy as np
 import os
 import platform
 from mimi.instrument import *
+import tempfile
 from mido import Message, MetaMessage
 from mimi.MidiTrack import MidiTrack
 import sys
@@ -174,7 +175,6 @@ class MidiFile(mido.MidiFile):
         # plt.imshow(raw_chan)
         # plt.show()
 
-
         chan = (raw_chan > 0) * 1  # binarization
         chan = np.pad(chan, [[0, 0], [1, 1]], mode='constant', constant_values=[0, 0])  # pad zero left and right
 
@@ -198,7 +198,7 @@ class MidiFile(mido.MidiFile):
         # Bug would be here:
         try:
             time_intervals = [events[0][1]] + [events[i + 1][1] - events[i][1] for i in range(len(events) - 1)]
-                # print(time_intervals)
+            # print(time_intervals)
         except IndexError:
             print(events)
             return []
@@ -208,7 +208,6 @@ class MidiFile(mido.MidiFile):
 
             note = event[0]
             time = event[1]
-
 
             if event[2] == 'on':
                 # print(chan[note, time_intervals])
@@ -264,7 +263,6 @@ class MidiFile(mido.MidiFile):
                     #     # change volume by percentage
                     #     # print("cc", msg.control, msg.value, "duration", msg.time)
 
-
                 # TODO: set instrument
                 if msg.type == "program_change":
                     self.instrument[idx_channel] = msg.program
@@ -278,8 +276,6 @@ class MidiFile(mido.MidiFile):
                     note_on_end_time = (time_counter + msg.time) // sr
                     intensity = volume * msg.velocity // 127
 
-
-
                     # When a note_on event *ends* the note start to be play
                     # Record end time of note_on event if there is no value in register
                     # When note_off event happens, we fill in the color
@@ -291,8 +287,6 @@ class MidiFile(mido.MidiFile):
                         old_intensity = note_register[msg.note][1]
                         roll[idx_channel, msg.note, old_end_time: note_on_end_time] = old_intensity
                         note_register[msg.note] = (note_on_end_time, intensity)
-
-
 
                 if msg.type == "note_off":
                     print("\t note off", msg.note, "time", time_counter, "duration", msg.time, "velocity", msg.velocity,
@@ -306,12 +300,10 @@ class MidiFile(mido.MidiFile):
                         continue
                     intensity = note_register[msg.note][1]
                     # fill in color
-                    if intensity < 0 :
+                    if intensity < 0:
                         raise ValueError
 
                     roll[idx_channel, msg.note, note_on_end_time:note_off_end_time] = intensity
-
-
 
                     note_register[msg.note] = -1  # reinitialize register
 
@@ -511,29 +503,35 @@ class MidiFile(mido.MidiFile):
         for idx in range(track_nb):
             scipy.misc.toimage(array[idx, :, :], cmin=0.0).save('%s%d.png' % (filename, idx))
 
-    def save_mp3(self, filename="out.mp3"):
-        tmp_file = "%s_tmp.mid" % filename
-        self.save(tmp_file)
-        module_root_path = os.path.split(os.path.abspath(__file__))[0]
-
-        total_time = self.get_seconds()
+    def save_mp3(self, filename="out.mp3", sr=16000):
 
         # set cfg_file to mimi/soundfont/8MBGMSFX.cfg
+        module_root_path = os.path.split(os.path.abspath(__file__))[0]
         cfg_file = os.path.join(module_root_path, "soundfont", "8MBGMSFX.cfg")
 
-        _platform = platform.system()
-        if _platform == "linux" or _platform == "linux2" or _platform == "Linux":
-            # use -map_channel 0.0.0 to map left channel to mono tone mp3 file
-            os.system(
-                "timidity -c %s %s -Ow -o - | ffmpeg -t %f -i - -f mp3 -ab 256k -map_channel 0.0.0 %s" %
-                (cfg_file, tmp_file, total_time, filename))
-        else:
-            os.system("timidity -c %s %s -Ow -o - | ffmpeg -t %f -i - -f mp3 -ab 256k %s" %
-                      (cfg_file, tmp_file, total_time, filename))
+        # save mid file to tmp folder
+        tmp_dir = tempfile.mkdtemp()
+        tmp_file = os.path.join(tmp_dir,"%s_tmp.mid" % filename)
+        self.save(tmp_file)
+
+        # get total time to trim the output mp3
+        total_time = self.get_seconds()
+
+        try:
+            _platform = platform.system()
+            if _platform == "linux" or _platform == "linux2" or _platform == "Linux":
+                # use -map_channel 0.0.0 to map left channel to mono tone mp3 file
+                os.system(
+                    f"timidity -c {cfg_file} {tmp_file} -Ow -o - | ffmpeg -t {total_time} -i - -f mp3 -ar {sr} -ab 256k -map_channel 0.0.0 {filename}")
+            else:
+                os.system(f"timidity -c {cfg_file} {tmp_file} -Ow -o - | ffmpeg -t {total_time} -i - -f mp3 -ar {sr} -ab 256k {filename}")
+        except Exception:
+            os.remove(tmp_file)
+            os.removedirs(tmp_dir)
 
         os.remove(tmp_file)
+        os.removedirs(tmp_dir)
 
-        # TODO: save tmp_file in tmp_folder
 
     def play(self, filename="tmp"):
 
@@ -617,9 +615,6 @@ if __name__ == "__main__":
             for key_shift in range(5):
                 mid.key_shift(1)
                 print(len(mid.tracks[0]))
-
-
-
 
     # mid.play()
     # mid.clip(0000,40)

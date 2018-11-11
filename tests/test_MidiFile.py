@@ -6,6 +6,8 @@ import os
 from mimi import MidiFile, MidiTrack, generator
 from mimi.instrument import Piano, Organ, Guitar, Strings, Brass, SynthEffect, SynthLead
 
+import tempfile
+
 class TestMidiFile(unittest.TestCase):
 
     def setUp(self):
@@ -111,8 +113,13 @@ class TestMidiFile(unittest.TestCase):
     def test_save_mp3(self):
 
         mid = self.mid
-        mid.save_mp3('test.mp3')
-        os.remove('test.mp3')
+        directory_name = tempfile.mkdtemp()
+        mp3_path = os.path.join(directory_name,'test.mp3')
+        mid.save_mp3(mp3_path)
+        # os.remove(mp3_path)
+        # os.removedirs(directory_name)
+
+        print(directory_name)
 
     def test_play(self):
         # set_soundfont(r"C:\Users\cswu\Desktop\mimi\mimi\soundfont\FluidR3_GM.sf2")
