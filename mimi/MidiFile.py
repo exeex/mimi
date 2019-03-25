@@ -511,6 +511,7 @@ class MidiFile(mido.MidiFile):
 
         # save mid file to tmp folder
         tmp_dir = tempfile.mkdtemp()
+        filename = os.path.abspath(filename)
         tmp_file = os.path.join(tmp_dir,"%s_tmp.mid" % filename)
         self.save(tmp_file)
 
